@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Laporan Harian Indomaret</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header-bg {
+            background: linear-gradient(to right, #dc1e28 33.33%, #0056b3 33.33%, #0056b3 66.66%, #ffd700 66.66%);
+            height: 8px;
+            width: 100%;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: #fff;
+            padding: 30px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .header {
+            text-align: center;
+            position: relative;
+            margin-bottom: 20px;
+            padding-top: 15px;
+        }
+        .header h1 {
+            color: #dc1e28;
+            margin: 0;
+            font-size: 1.8em;
+            padding-top: 50px;
+        }
+        .logo {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            height: 40px;
+            width: auto;
+        }
+        hr {
+            border: 0;
+            height: 2px;
+            background-color: #dc1e28;
+            margin: 15px 0;
+        }
+        .input-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #444;
+            font-size: 0.9em;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 0.9em;
+            box-sizing: border-box;
+        }
+        .reset-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .reset-button {
+            padding: 6px 10px;
+            background-color: #dc1e28;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 0.8em;
+        }
+        .reset-button:hover {
+            background-color: #a01a24;
+        }
+        .reset-note {
+            font-size: 0.7em;
+            color: #888;
+            margin-top: 3px;
+        }
+        .result {
+            font-weight: bold;
+            color: #dc1e28;
+        }
+        .format-box {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 8px;
+            position: relative;
+        }
+        .format-box h2 {
+            margin-top: 0;
+            color: #0056b3;
+            font-size: 1.2em;
+        }
+        .format-box ul {
+            list-style-type: none;
+            padding: 0;
+            font-size: 0.9em;
+        }
+        .format-box li {
+            margin-bottom: 8px;
+        }
+        .format-text {
+            white-space: pre-wrap;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+        .copy-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 8px 12px;
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background-color 0.3s ease;
+        }
+        .copy-button:hover {
+            background-color: #004494;
+        }
+        .save-button {
+            display: block;
+            width: 150px;
+            margin: 20px auto 0;
+            padding: 10px;
+            background-color: #008c45;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-align: center;
+        }
+        .save-button:hover {
+            background-color: #006b35;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-bg"></div>
+    <div class="header">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/9/9d/Logo_Indomaret.png" alt="Indomaret Logo" class="logo">
+        <h1>Kalkulator Laporan Harian Indomaret</h1>
+    </div>
+
+    <hr>
+
+    <div class="input-section">
+        <div class="input-group">
+            <label for="current-date">Tanggal Hari Ini:</label>
+            <input type="text" id="current-date" value="7/9">
+        </div>
+        <div class="input-group">
+            <label for="days-in-month">Jumlah Hari dalam Bulan:</label>
+            <input type="text" id="days-in-month" value="30" inputmode="numeric" pattern="[0-9]*">
+        </div>
+        <div class="input-group">
+            <label for="sales-net">Sales Net Hari Ini:</label>
+            <input type="text" id="sales-net" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('sales-net')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="akm-sales-kemarin">AKM Sales Kemarin:</label>
+            <input type="text" id="akm-sales-kemarin" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('akm-sales-kemarin')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="struk">Struk Hari Ini:</label>
+            <input type="text" id="struk" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('struk')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="akm-struk-kemarin">AKM Struk Kemarin:</label>
+            <input type="text" id="akm-struk-kemarin" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('akm-struk-kemarin')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="target-spd">Target SPD:</label>
+            <input type="text" id="target-spd" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('target-spd')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="spd-bln-lalu">SPD Bulan Lalu:</label>
+            <input type="text" id="spd-bln-lalu" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('spd-bln-lalu')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="struk-harian-bln-lalu">Struk Perhari Bulan Lalu:</label>
+            <input type="text" id="struk-harian-bln-lalu" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('struk-harian-bln-lalu')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="apc-bln-lalu">APC Bulan Lalu:</label>
+            <input type="text" id="apc-bln-lalu" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('apc-bln-lalu')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="target-total-sales">Target Total Sales Bulan Ini:</label>
+            <input type="text" id="target-total-sales" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('target-total-sales')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+    </div>
+    
+    <button class="save-button" onclick="saveData()">Simpan Data</button>
+
+    <hr>
+    
+    <div class="output-section">
+        <div class="format-box">
+            <h2>Laporan Format 1</h2>
+            <div id="format1-output"></div>
+        </div>
+        
+        <div class="format-box">
+            <h2>Laporan Format 2</h2>
+            <button class="copy-button" onclick="copyToClipboard()">Copy</button>
+            <pre class="format-text" id="format2-output"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+    const inputIds = [
+        'current-date', 'days-in-month', 'sales-net', 'akm-sales-kemarin', 
+        'struk', 'akm-struk-kemarin', 'target-spd', 'spd-bln-lalu', 'struk-harian-bln-lalu', 
+        'apc-bln-lalu', 'target-total-sales'
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadData();
+        inputIds.forEach(id => {
+            const input = document.getElementById(id);
+            input.addEventListener('input', formatAndCalculate);
+        });
+        calculateAndDisplay();
+    });
+
+    function formatAndCalculate(e) {
+        const value = e.target.value;
+        const id = e.target.id;
+
+        if (id === 'current-date') {
+            const cleanValue = value.replace(/[^0-9/]/g, '');
+            e.target.value = cleanValue;
+            calculateAndDisplay();
+            return;
+        }
+
+        const cleanValue = value.replace(/\./g, '');
+        if (cleanValue === '') {
+            e.target.value = '';
+        } else {
+            const numberValue = parseFloat(cleanValue);
+            if (!isNaN(numberValue)) {
+                e.target.value = new Intl.NumberFormat('id-ID').format(numberValue);
+            }
+        }
+        calculateAndDisplay();
+    }
+
+    function formatNumber(num) {
+        if (isNaN(num)) return 0;
+        // Mengubah hasil hitung menjadi bilangan bulat
+        return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(num);
+    }
+    
+    function cleanAndParse(value) {
+        if (typeof value !== 'string' || value === '') {
+            return 0;
+        }
+        return parseFloat(value.replace(/\./g, '')) || 0;
+    }
+
+    function calculateAndDisplay() {
+        const dateInput = document.getElementById('current-date').value;
+        const dateParts = dateInput.split('/');
+        const currentDate = cleanAndParse(dateParts[0]);
+        const currentMonth = dateParts[1] || '';
+
+        const daysInMonth = cleanAndParse(document.getElementById('days-in-month').value);
+        const salesNet = cleanAndParse(document.getElementById('sales-net').value);
+        const akmSalesKemarin = cleanAndParse(document.getElementById('akm-sales-kemarin').value);
+        const struk = cleanAndParse(document.getElementById('struk').value);
+        const akmStrukKemarin = cleanAndParse(document.getElementById('akm-struk-kemarin').value);
+        const targetSpd = cleanAndParse(document.getElementById('target-spd').value);
+        const spdBlnLalu = cleanAndParse(document.getElementById('spd-bln-lalu').value);
+        const strukHarianBlnLalu = cleanAndParse(document.getElementById('struk-harian-bln-lalu').value);
+        const apcBlnLalu = cleanAndParse(document.getElementById('apc-bln-lalu').value);
+        const targetTotalSales = cleanAndParse(document.getElementById('target-total-sales').value);
+
+        const akmSales = salesNet + akmSalesKemarin;
+        const spd = currentDate > 0 ? akmSales / currentDate : 0;
+        const ach = targetSpd > 0 ? (spd * 100) / targetSpd : 0;
+        const growthSpd = spdBlnLalu > 0 ? ((spd - spdBlnLalu) / spdBlnLalu) * 100 : 0;
+        const akmStruk = akmStrukKemarin + struk;
+        const strukPerhari = currentDate > 0 ? akmStruk / currentDate : 0;
+        const growthStruk = strukHarianBlnLalu > 0 ? ((strukPerhari - strukHarianBlnLalu) / strukHarianBlnLalu) * 100 : 0;
+        const apc = strukPerhari > 0 ? spd / strukPerhari : 0;
+        const growthApc = apcBlnLalu > 0 ? ((apc - apcBlnLalu) / apcBlnLalu) * 100 : 0;
+        const totalSalesSdTgl = akmSales;
+        const achSales = targetTotalSales > 0 ? (totalSalesSdTgl * 100) / targetTotalSales : 0;
+        const kekuranganVsTarget = targetTotalSales - totalSalesSdTgl;
+        const sisaTgl = daysInMonth - currentDate;
+        const kekuranganPerHari = sisaTgl > 0 ? kekuranganVsTarget / sisaTgl : 0;
+
+        const output1 = `
+            <ul>
+                <li>Seles Net: <span class="result">Rp${formatNumber(salesNet)}</span></li>
+                <li>AKM Seles kemarin: <span class="result">Rp${formatNumber(akmSalesKemarin)}</span></li>
+                <li>- AKM Seles: <span class="result">Rp${formatNumber(akmSales)}</span></li>
+                <li>- SPD: <span class="result">Rp${formatNumber(spd)}</span></li>
+                <li>- Target SPD: <span class="result">Rp${formatNumber(targetSpd)}</span></li>
+                <li>- ACH: <span class="result">${formatNumber(ach)}%</span></li>
+                <li>SPD bulan lalu: <span class="result">Rp${formatNumber(spdBlnLalu)}</span></li>
+                <li>- Growth: <span class="result">${formatNumber(growthSpd)}%</span></li>
+                <li>Struk: <span class="result">${formatNumber(struk)}</span></li>
+                <li>Akm struk lalu: <span class="result">${formatNumber(akmStrukKemarin)}</span></li>
+                <li>- Akm struk: <span class="result">${formatNumber(akmStruk)}</span></li>
+                <li>- Struk perhari: <span class="result">${formatNumber(strukPerhari)}</span></li>
+                <li>Struk perhari bulan lalu: <span class="result">${formatNumber(strukHarianBlnLalu)}</span></li>
+                <li>- Growth: <span class="result">${formatNumber(growthStruk)}%</span></li>
+                <li>- APC: <span class="result">Rp${formatNumber(apc)}</span></li>
+                <li>APC bulan lalu: <span class="result">Rp${formatNumber(apcBlnLalu)}</span></li>
+                <li>- Growth: <span class="result">${formatNumber(growthApc)}%</span></li>
+            </ul>
+        `;
+        document.getElementById('format1-output').innerHTML = output1;
+
+        const output2 = `_LAPORAN SALES HARIAN TOKO_
+_Kode/Nama Toko:_ T3EI Taman Pondok Jati
+_Tgl:_ ${dateInput}
+_Sales Net:_ ${formatNumber(salesNet)}
+_Struk:_ ${formatNumber(struk)}
+_APC:_ ${formatNumber(apc)}
+
+_Target Akumulasi:_
+- _Target Total Sales:_ ${formatNumber(targetTotalSales)}
+- _Total Sales s/d tgl:_ ${formatNumber(totalSalesSdTgl)}
+- _Ach Sales:_ ${formatNumber(achSales)}%
+- _Kekurangan vs Target:_ ${formatNumber(kekuranganVsTarget)}
+- _Kekurangan per hari:_ ${formatNumber(kekuranganPerHari)}
+
+_Target SPD:_
+- _Target SPD:_ ${formatNumber(targetSpd)}
+- _Actual SPD:_ ${formatNumber(spd)}
+- _% Pencapaian SPD:_ ${formatNumber(ach)}%
+- _SPD Bulan lalu:_ ${formatNumber(spdBlnLalu)}
+- _Growth SPD:_ ${formatNumber(growthSpd)}%
+- _Growth Struk:_ ${formatNumber(growthStruk)}%
+- _Growth APC:_ ${formatNumber(growthApc)}%`;
+
+        document.getElementById('format2-output').textContent = output2;
+    }
+
+    function resetInput(id) {
+        document.getElementById(id).value = '';
+        calculateAndDisplay();
+    }
+    
+    function copyToClipboard() {
+        const outputText = document.getElementById('format2-output').textContent;
+        navigator.clipboard.writeText(outputText).then(() => {
+            alert('Laporan berhasil disalin ke clipboard!');
+        }).catch(err => {
+            console.error('Gagal menyalin teks: ', err);
+            alert('Gagal menyalin laporan.');
+        });
+    }
+
+    function saveData() {
+        const data = {};
+        inputIds.forEach(id => {
+            data[id] = document.getElementById(id).value;
+        });
+        localStorage.setItem('laporanIndomaretData', JSON.stringify(data));
+        alert('Data berhasil disimpan!');
+    }
+
+    function loadData() {
+        const savedData = localStorage.getItem('laporanIndomaretData');
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            inputIds.forEach(id => {
+                if (data[id] !== undefined) {
+                    document.getElementById(id).value = data[id];
+                }
+            });
+        }
+    }
+</script>
+
+</body>
+</html>
