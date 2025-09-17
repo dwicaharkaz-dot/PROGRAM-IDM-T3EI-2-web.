@@ -1,3 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Stock Opname IDM T3EI</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:0; background:#ecf0f1; }
+    .header-container { display:flex; justify-content:space-between; align-items:center;
+                  padding:10px 20px; background:white; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+    .header-container img { height:40px; }
+    .header-bg { display:flex; height:10px; }
+    .color-red{flex:1;background:#e74c3c}.color-blue{flex:1;background:#3498db}.color-yellow{flex:1;background:#f1c40f}
+    header h1 { text-align:center; font-size:2em; margin:20px 0; color:#333; }
+    .container { width:90%; max-width:1200px; margin:20px auto; background:white; padding:20px;
+                 border-radius:10px; box-shadow:0 0 15px rgba(0,0,0,.1); }
+    textarea { width:80%; height:120px; padding:10px; border:1px solid #ccc; border-radius:5px; }
+    button { padding:10px 20px; border:none; border-radius:5px; cursor:pointer; }
+    .input-form button { background:#2ecc71; color:white; }
+    .search-bar { text-align:center; margin:12px 0; }
+    .search-bar input { width:70%; max-width:500px; padding:10px; border:1px solid #ddd;
+                        border-radius:25px; text-align:center; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th,td { border:1px solid #ddd; padding:8px; text-align:center; }
+    th { background:#f2f2f2; }
+    .stok-fisik-cell input { width:120px; padding:5px; }
+    .selisih-negatif{color:#e74c3c;font-weight:bold}.selisih-positif{color:#27ae60;font-weight:bold}
+    .download-btn { background:#3498db; color:white; margin:10px 5px; }
+    .section-title { text-align:center; font-size:1.5em; color:#555; margin:30px 0 10px; }
+    .total-box { text-align:center; font-size:1.1em; font-weight:bold; padding:10px;
+                 border:2px dashed #3498db; border-radius:8px; background:#e8f5ff; margin-top:10px; }
+    .controls-row { display:flex; gap:10px; align-items:center; justify-content:center; margin-top:10px; }
+    .small { padding:8px 12px; font-size:0.95rem; }
+    /* Menghilangkan elemen saat pencarian */
+    .hidden { display: none; }
+    nav { text-align: center; margin: 20px 0; }
+    nav a { margin: 0 15px; text-decoration: none; color: #3498db; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="index.html">Menu Utama</a>
+    <a href="#" style="color: #f1c40f;">Program Lain</a>
+  </nav>
+
+  <div class="header-container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/9/9d/Logo_Indomaret.png" alt="Logo Indomaret">
+    <h1>STOCK OPNAME IDM T3EI</h1>
+    <div></div>
+  </div>
+  <div class="header-bg"><div class="color-red"></div><div class="color-blue"></div><div class="color-yellow"></div></div>
+
+  <div class="container">
+    <h2 class="section-title">Input Data Stok Sistem (Multi-Baris)</h2>
+    <div class="input-form">
+      <textarea id="dataInput" placeholder="No| Nama Produk&#10;| PLU | Harga | Stok"></textarea><br>
+      <div class="controls-row">
+        <button class="small" onclick="addData()">Tambah Stok</button>
+        <button class="small download-btn" style="background:#e74c3c;" onclick="resetStok()">Reset Stok Sistem</button>
+        <button class="small download-btn" id="restoreButton" style="background:#f1c40f; display:none;" onclick="restoreData()">Pulihkan Data</button>
+        <button class="small" onclick="fillExample()">Isi Contoh 5 Barang</button>
+      </div>
+    </div>
+
+    <h2 class="section-title">Import Data Stok Sistem (XLSX)</h2>
+    <div class="controls-row">
+      <input type="file" id="fileInput" accept=".xlsx" />
+    </div>
+
+    <h2 class="section-title">Pencarian</h2>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Cari berdasarkan PLU atau Nama Barang... (ketik lalu tunggu)" />
+    </div>
+
+    <h2 class="section-title">Data Stok Fisik</h2>
+    <table id="stokTable" role="table" aria-label="Tabel stok fisik">
+      <thead>
+        <tr>
+          <th>No</th><th>PLU</th><th>Nama Barang</th><th>Harga</th><th>Stok Sistem</th>
+          <th>Stok Fisik</th><th>Selisih QTY</th><th>Selisih Rupiah</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div style="text-align:center; margin-top:12px;">
+      <button class="download-btn" onclick="downloadXLSX('stokTable','Semua_Data_Stock_Opname.xlsx')">Download Semua Data (XLSX)</button>
+    </div>
+  </div>
+
+  <div class="container" id="selisihContainer" style="display:none;">
+    <h2 class="section-title">Item Selisih</h2>
+
+    <h3 style="margin-top:0">Item Minus</h3>
+    <table id="selisihMinusTable">
+      <thead><tr><th>No</th><th>PLU</th><th>Nama Barang</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih QTY</th><th>Selisih Rupiah</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <h3 style="margin-top:18px">Item Plus</h3>
+    <table id="selisihPlusTable">
+      <thead><tr><th>No</th><th>PLU</th><th>Nama Barang</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih QTY</th><th>Selisih Rupiah</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="total-box" id="totalMinus">Total Rupiah Minus: Rp 0</div>
+    <div class="total-box" id="totalPlus">Total Rupiah Plus: Rp 0</div>
+    <div class="total-box" id="totalAll">Total Selisih Rupiah: Rp 0</div>
+
+    <div style="text-align:center; margin-top:12px;">
+      <button class="download-btn" onclick="downloadSelisih()">Download Data Selisih (XLSX)</button>
     </div>
   </div>
 
@@ -6,7 +118,7 @@
   <script>
     // data
     let allItems = [];
-    let tempData = []; // Variabel sementara untuk menyimpan data sebelum reset
+    let tempData = [];
 
     // DOM
     const tableBody = document.querySelector('#stokTable tbody');
@@ -26,30 +138,27 @@
       let currentItem = {};
       
       lines.forEach(line => {
-        // Cek baris nama produk
         const nameMatch = line.match(/^(\d+|)\s*\|\s*([^|]+)$/);
         if (nameMatch) {
-          if (currentItem.nama) { // Jika ada item sebelumnya, simpan
+          if (currentItem.nama) {
             newItems.push(currentItem);
           }
           currentItem = { nama: nameMatch[2].trim(), stokFisik: 0 };
           return;
         }
 
-        // Cek baris PLU, Harga, Stok
         const dataMatch = line.match(/\|\s*(\d+)\s*\|\s*([\d\.]+)\s*\|\s*STOK:\s*(\d+)$/);
         if (dataMatch) {
-          if (currentItem.nama) { // Memastikan ada nama produk sebelumnya
+          if (currentItem.nama) {
             currentItem.plu = String(dataMatch[1]);
             currentItem.harga = Number(dataMatch[2].replace('.', ''));
             currentItem.stokSistem = Number(dataMatch[3]);
             newItems.push(currentItem);
-            currentItem = {}; // Reset untuk item berikutnya
+            currentItem = {};
           }
         }
       });
       
-      // Simpan item terakhir jika belum tersimpan
       if (currentItem.nama) {
           newItems.push(currentItem);
       }
@@ -64,21 +173,17 @@
     // contoh isi (opsional)
     function fillExample(){
       const example = [
-        "01| Indomie Goreng",
-        "  | 1001 | 3.500 | STOK: 100",
-        "______________________________",
-        "02| Aqua 600ml",
-        "  | 1002 | 5.000 | STOK: 50",
-        "______________________________",
-        "03| Susu UHT",
-        "  | 1003 | 8.000 | STOK: 30"
+        "1001,Indomie Goreng,3500,100",
+        "1002,Aqua 600ml,5000,50",
+        "1003,Susu UHT,8000,30",
+        "1004,Gula Pasir,12000,20",
+        "1005,Teh Celup,2000,40"
       ].join('\n');
       document.getElementById('dataInput').value = example;
     }
 
     // reset -> hapus semua data stok sistem
     function resetStok(){
-      // Simpan data saat ini ke variabel sementara
       tempData = JSON.parse(JSON.stringify(allItems));
       allItems = [];
       renderTable();
@@ -91,7 +196,6 @@
       const fileInput = document.getElementById('fileInput');
       if(fileInput) fileInput.value = '';
       saveToLocalStorage();
-      // Tampilkan tombol pulihkan
       if(tempData.length > 0) {
         restoreButton.style.display = 'block';
       }
@@ -101,7 +205,7 @@
     function restoreData(){
       allItems = JSON.parse(JSON.stringify(tempData));
       renderTable();
-      restoreButton.style.display = 'none'; // Sembunyikan tombol setelah pemulihan
+      restoreButton.style.display = 'none';
       saveToLocalStorage();
     }
 
@@ -346,18 +450,15 @@
       }
     }
 
-    // Memuat data saat halaman pertama kali dibuka
     loadFromLocalStorage();
 
-    // Event listener untuk memunculkan peringatan saat akan menutup tab
     window.addEventListener('beforeunload', function(e) {
       if (allItems.length > 0) {
         e.preventDefault();
-        e.returnValue = ''; // Diperlukan untuk kompatibilitas di beberapa browser
+        e.returnValue = '';
       }
     });
 
-    // Initial render
     renderTable();
   </script>
 </body>
