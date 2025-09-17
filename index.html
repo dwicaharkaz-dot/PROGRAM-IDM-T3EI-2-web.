@@ -41,7 +41,7 @@
 
   <nav>
     <a href="index.html">Menu Utama</a>
-    <a href="program_lain.html" style="color: #f1c40f;">Program seles harian</a>
+    <a href="halaman_lain.html" style="color: #f1c40f;">Program Lain</a>
   </nav>
 
   <div class="header-container">
@@ -54,7 +54,7 @@
   <div class="container">
     <h2 class="section-title">Input Data Stok Sistem (Multi-Baris)</h2>
     <div class="input-form">
-      <textarea id="dataInput" placeholder="No| Nama Produk&#10;| PLU | Harga | Stok"></textarea><br>
+      <textarea id="dataInput" placeholder="Contoh:&#10;01| Sgm Eksplor...&#10;  | 20087025 | 56.900 | STOK: 5&#10;..."></textarea><br>
       <div class="controls-row">
         <button class="small" onclick="addData()">Tambah Stok</button>
         <button class="small download-btn" style="background:#e74c3c;" onclick="resetStok()">Reset Stok Sistem</button>
@@ -130,55 +130,71 @@
     const totalAllEl = document.getElementById('totalAll');
     const searchInput = document.getElementById('searchInput');
     const restoreButton = document.getElementById('restoreButton');
+    const dataInputEl = document.getElementById('dataInput');
 
     // Tambah data manual
     function addData(){
-      const lines = document.getElementById('dataInput').value.split('\n').map(l=>l.trim()).filter(l=>l!=='');
+      const rawInput = dataInputEl.value;
+      
+      const cleanLines = rawInput.split('\n')
+        .map(line => line.replace(/[\u200B-\u200D\uFEFF]/g, '').trim())
+        .filter(line => line !== '' && !line.startsWith('____'));
+      
       const newItems = [];
-      let currentItem = {};
-      
-      lines.forEach(line => {
-        const nameMatch = line.match(/^(\d+|)\s*\|\s*([^|]+)$/);
-        if (nameMatch) {
-          if (currentItem.nama) {
-            newItems.push(currentItem);
+      for(let i = 0; i < cleanLines.length; i += 2){
+        if(i + 1 < cleanLines.length){
+          const namaLine = cleanLines[i];
+          const dataLine = cleanLines[i+1];
+          
+          const namaParts = namaLine.split('|').map(p => p.trim());
+          const dataParts = dataLine.split('|').map(p => p.trim());
+          
+          if(namaParts.length >= 2 && dataParts.length >= 4){
+            const namaProduk = namaParts[1];
+            const plu = dataParts[1];
+            const hargaString = dataParts[2].replace(/\./g, '');
+            const harga = Number(hargaString) || 0;
+            const stokString = dataParts[3].replace('STOK:', '').trim();
+            const stokSistem = Number(stokString) || 0;
+            
+            const newItem = {
+              plu: String(plu),
+              nama: String(namaProduk),
+              harga: harga,
+              stokSistem: stokSistem,
+              stokFisik: 0
+            };
+            newItems.push(newItem);
           }
-          currentItem = { nama: nameMatch[2].trim(), stokFisik: 0 };
-          return;
         }
-
-        const dataMatch = line.match(/\|\s*(\d+)\s*\|\s*([\d\.]+)\s*\|\s*STOK:\s*(\d+)$/);
-        if (dataMatch) {
-          if (currentItem.nama) {
-            currentItem.plu = String(dataMatch[1]);
-            currentItem.harga = Number(dataMatch[2].replace('.', ''));
-            currentItem.stokSistem = Number(dataMatch[3]);
-            newItems.push(currentItem);
-            currentItem = {};
-          }
-        }
-      });
-      
-      if (currentItem.nama) {
-          newItems.push(currentItem);
       }
-
+      
       if(newItems.length){
         allItems = allItems.concat(newItems);
         renderTable();
       }
-      document.getElementById('dataInput').value = '';
+      dataInputEl.value = '';
     }
 
     // contoh isi (opsional)
     function fillExample(){
       const example = [
-        "1001,Indomie Goreng,3500,100",
-        "1002,Aqua 600ml,5000,50",
-        "1003,Susu UHT,8000,30",
-        "1004,Gula Pasir,12000,20",
-        "1005,Teh Celup,2000,40"
+        "01| Sgm Eksplor..Pertumbuhan (Belajar) 600G",
+        "  | 20087025 | 56.900 | STOK: 5",
+        "________________________________",
+        "02| Sgm Ananda..0-6 Bulan 400G",
+        "  | 20040340 | 43.200 | STOK: 5",
+        "________________________________",
+        "03| Sgm Ananda..-12 Bulan 400G",
+        "  | 20040312 | 43.200 | STOK: 4",
+        "________________________________",
+        "04| Sgm Eksplor..Pertumbuhan Madu 900G",
+        "  | 20066494 | 79.600 | STOK: 3",
+        "________________________________",
+        "05| Bebelac 4..Bubuk Madu 400G/350G",
+        "  | 20035635 | 68.100 | STOK: 2"
       ].join('\n');
+      
       document.getElementById('dataInput').value = example;
     }
 
@@ -402,14 +418,12 @@
       aoa.push(["No","PLU","Nama Barang","Stok Sistem","Stok Fisik","Selisih QTY","Selisih Rupiah"]);
       plus.forEach((r, i) => aoa.push([i+1, r.plu, r.nama, r.stokSistem, r.stokFisik, r.selisihQty, r.selisihRp]));
       aoa.push([]);
-      aoa.push(["Total Rupiah Plus","","","","","", totalPlus]);
-      aoa.push([]);
       aoa.push(["TOTAL SELISIH RUPIAH","","","","","", totalMinus + totalPlus]);
 
       const ws = XLSX.utils.aoa_to_sheet(aoa);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Data Selisih");
-      XLSX.writeFile(wb, "Data_Selisih.xlsx");
+      XDXL.writeFile(wb, "Data_Selisih.xlsx");
     }
 
     // helper: escape HTML to avoid XSS in table rendering
