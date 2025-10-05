@@ -80,7 +80,7 @@
 
   <nav>
     <a href="index.html">SO IDM (Reguler)</a>
-    <a href="program_lain.html">LAPORAN SALES</a>
+    <a href="program_lain.html">Program Lain</a>
     <a href="so_prodsus.html">SO Prodsus</a>
   </nav>
 
@@ -153,7 +153,119 @@
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+
+// === VERSI BARU: DOWNLOAD XLSX DENGAN WARNA BIRU & KUNING ===
+function downloadXLSX(tableId, filenameBase){
+  const table = document.getElementById(tableId);
+  const rowsToExport = [...table.querySelectorAll('tbody tr')].filter(tr => tr.style.display !== 'none');
+  const dataToExport = [['No', 'PLU', 'Nama Barang', 'Harga', 'Stok Sistem', 'Stok Fisik', 'Selisih QTY', 'Selisih Rupiah']];
+
+  rowsToExport.forEach(row => {
+    const cells = [...row.cells];
+    const stokFisikValue = cells[5].querySelector('input') ? cells[5].querySelector('input').value : cells[5].textContent;
+    const hargaClean = cells[3].textContent.replace(/[^\d]/g, '');
+    const selisihRpText = cells[7].textContent.replace(/[^\d]/g, '');
+    const rowData = [
+      cells[0].textContent,
+      cells[1].textContent,
+      cells[2].textContent,
+      Number(hargaClean),
+      cells[4].textContent,
+      stokFisikValue,
+      cells[6].textContent,
+      Number(selisihRpText)
+    ];
+    dataToExport.push(rowData);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(dataToExport);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Stock Opname");
+
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellRef = XLSX.utils.encode_cell({r:R, c:C});
+      if(!ws[cellRef]) continue;
+      ws[cellRef].s = {
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        font: { bold: true },
+        border: {
+          top: { style: "medium" },
+          bottom: { style: "medium" },
+          left: { style: "medium" },
+          right: { style: "medium" }
+        },
+        fill: R === 0 ? { fgColor: { rgb: "4A90E2" } } : undefined // Header biru
+      };
+    }
+  }
+
+  const colWidths = dataToExport[0].map((_, i) => {
+    const maxLen = dataToExport.reduce((a, r) => Math.max(a, String(r[i] || '').length), 10);
+    return { wch: maxLen + 2 };
+  });
+  ws['!cols'] = colWidths;
+
+  const dateStr = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `${filenameBase}_${dateStr}.xlsx`);
+}
+
+function downloadSelisih(){
+  const minus = window._minusItems || [];
+  const plus = window._plusItems || [];
+  const totalMinus = window._totalMinusRp || 0;
+  const totalPlus = window._totalPlusRp || 0;
+
+  const aoa = [];
+  aoa.push(["=== ITEM MINUS ==="]);
+  aoa.push(["No","PLU","Nama Barang","Stok Sistem","Stok Fisik","Selisih QTY","Selisih Rupiah"]);
+  minus.forEach((r, i) => aoa.push([i+1, r.plu, r.nama, r.stokSistem, r.stokFisik, r.selisihQty, r.selisihRp]));
+  aoa.push([]);
+  aoa.push(["Total Rupiah Minus","","","","","", totalMinus]);
+  aoa.push([]);
+  aoa.push(["=== ITEM PLUS ==="]);
+  aoa.push(["No","PLU","Nama Barang","Stok Sistem","Stok Fisik","Selisih QTY","Selisih Rupiah"]);
+  plus.forEach((r, i) => aoa.push([i+1, r.plu, r.nama, r.stokSistem, r.stokFisik, r.selisihQty, r.selisihRp]));
+  aoa.push([]);
+  aoa.push(["TOTAL SELISIH RUPIAH","","","","","", totalMinus + totalPlus]);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Data Selisih");
+
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellRef = XLSX.utils.encode_cell({r:R, c:C});
+      if(!ws[cellRef]) continue;
+      ws[cellRef].s = {
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        font: { bold: true },
+        border: {
+          top: { style: "medium" },
+          bottom: { style: "medium" },
+          left: { style: "medium" },
+          right: { style: "medium" }
+        },
+        fill: (R === 1 || R === 9) ? { fgColor: { rgb: "FFD700" } } : undefined // Header kuning
+      };
+    }
+  }
+
+  const colWidths = aoa[1].map((_, i) => {
+    const maxLen = aoa.reduce((a, r) => Math.max(a, String(r[i] || '').length), 10);
+    return { wch: maxLen + 2 };
+  });
+  ws['!cols'] = colWidths;
+
+  const dateStr = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Data_Selisih_${dateStr}.xlsx`);
+}
+
+
+</script>
 
   <script>
     // data
@@ -373,201 +485,4 @@
       plusItems.forEach((r, i) => {
         const row = document.createElement('tr');
         row.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(r.plu)}</td><td>${escapeHtml(r.nama)}</td><td>${escapeHtml(r.stokSistem)}</td><td>${escapeHtml(r.stokFisik)}</td><td>${escapeHtml(r.selisihQty)}</td><td>${formatRupiah(r.selisihRp)}</td>`; 
-        selisihPlusBody.appendChild(row);
-      });
-
-      selisihContainer.style.display = anySelisih ? 'block' : 'none';
-      totalMinusEl.textContent = 'Total Rupiah Minus: ' + formatRupiah(totalMinusRp);
-      totalPlusEl.textContent  = 'Total Rupiah Plus: ' + formatRupiah(totalPlusRp);
-      totalAllEl.textContent   = 'Total Selisih Rupiah: ' + formatRupiah(totalMinusRp + totalPlusRp);
-
-      window._minusItems = minusItems;
-      window._plusItems = plusItems;
-      window._totalMinusRp = totalMinusRp;
-      window._totalPlusRp = totalPlusRp;
-    }
-
-    // Pencarian: menyembunyikan/menampilkan baris
-    function performSearch(){
-      const q = (searchInput.value || '').toString().trim().toLowerCase();
-      const rows = document.querySelectorAll('#stokTable tbody tr');
-      let visibleCount = 0;
-      rows.forEach(tr => {
-        // Hanya memproses baris yang memiliki sel (untuk menghindari baris kosong yang mungkin ada)
-        if(tr.cells.length > 2) {
-            const plu = tr.cells[1].textContent.trim().toLowerCase();
-            const name = tr.cells[2].textContent.trim().toLowerCase();
-            const isMatch = plu.includes(q) || name.includes(q);
-            tr.style.display = isMatch ? '' : 'none';
-            
-            if (isMatch) {
-                tr.cells[0].textContent = ++visibleCount;
-            }
-        }
-      });
-    }
-
-    // attach search listener (debounce kecil)
-    let _searchTimer = null;
-    searchInput.addEventListener('input', function(){
-      if(_searchTimer) clearTimeout(_searchTimer);
-      _searchTimer = setTimeout(() => { performSearch(); _searchTimer = null; }, 150);
-    });
-    
-    // Import dari XLSX
-    document.getElementById('fileInput').addEventListener('change', handleFile, false);
-    function handleFile(e){
-      const file = e.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = function(ev){
-        const data = new Uint8Array(ev.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        // Menggunakan skip_header: true dan kemudian memproses objek
-        const rows = XLSX.utils.sheet_to_json(firstSheet, { header: ["PLU","Nama Barang","Harga","Stok Sistem","Stok Fisik"] });
-        
-        const newItems = [];
-        rows.slice(1).forEach(r=>{
-          // Mengambil nilai dari kolom-kolom yang diharapkan
-          if(r && r.PLU){
-            newItems.push({
-              plu: String(r.PLU),
-              nama: String(r['Nama Barang'] || ''),
-              // Mengubah string menjadi angka
-              harga: Number(r.Harga) || 0,
-              stokSistem: Number(r['Stok Sistem']) || 0,
-              stokFisik: Number(r['Stok Fisik']) || 0
-            });
-          }
-        });
-
-        // Mencegah duplikasi: tambahkan hanya PLU yang belum ada
-        const existingPlu = new Set(allItems.map(item => String(item.plu).trim()));
-        const uniqueNewItems = newItems.filter(item => !existingPlu.has(String(item.plu).trim()));
-
-        allItems = allItems.concat(uniqueNewItems);
-        renderTable();
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
-    // Download semua data
-    function downloadXLSX(tableId, filename){
-      const table = document.getElementById(tableId);
-      const rowsToExport = [...table.querySelectorAll('tbody tr')].filter(tr => tr.style.display !== 'none');
-      const dataToExport = [['No', 'PLU', 'Nama Barang', 'Harga', 'Stok Sistem', 'Stok Fisik', 'Selisih QTY', 'Selisih Rupiah']];
-      
-      rowsToExport.forEach(row => {
-          const cells = [...row.cells];
-          // Mengambil nilai dari input untuk Stok Fisik, atau textContent jika tidak ada input
-          const stokFisikValue = cells[5].querySelector('input') ? cells[5].querySelector('input').value : cells[5].textContent;
-          
-          // Mengambil nilai Rupiah dalam bentuk angka (tanpa Rp) untuk ekspor yang bersih
-          const hargaClean = cells[3].textContent.replace('Rp', '').replace(/\./g, '').trim();
-          const selisihRpText = cells[7].textContent.replace('Rp', '').replace(/\./g, '').trim();
-
-          const rowData = [
-              cells[0].textContent,
-              cells[1].textContent,
-              cells[2].textContent,
-              Number(hargaClean), // Harga (Angka Bersih)
-              cells[4].textContent,
-              stokFisikValue,
-              cells[6].textContent,
-              Number(selisihRpText) // Selisih Rupiah (Angka Bersih)
-          ];
-          dataToExport.push(rowData);
-      });
-      
-      const ws = XLSX.utils.aoa_to_sheet(dataToExport);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Stock Opname");
-      XLSX.writeFile(wb, filename);
-    }
-
-    // Download selisih
-    function downloadSelisih(){
-      const minus = window._minusItems || [];
-      const plus = window._plusItems || [];
-      const totalMinus = window._totalMinusRp || 0;
-      const totalPlus = window._totalPlusRp || 0;
-
-      const aoa = [];
-      aoa.push(["=== ITEM MINUS ==="]);
-      aoa.push(["No","PLU","Nama Barang","Stok Sistem","Stok Fisik","Selisih QTY","Selisih Rupiah"]);
-      minus.forEach((r, i) => aoa.push([i+1, r.plu, r.nama, r.stokSistem, r.stokFisik, r.selisihQty, r.selisihRp]));
-      aoa.push([]);
-      aoa.push(["Total Rupiah Minus","","","","","", totalMinus]);
-      aoa.push([]);
-      aoa.push(["=== ITEM PLUS ==="]);
-      aoa.push(["No","PLU","Nama Barang","Stok Sistem","Stok Fisik","Selisih QTY","Selisih Rupiah"]);
-      plus.forEach((r, i) => aoa.push([i+1, r.plu, r.nama, r.stokSistem, r.stokFisik, r.selisihQty, r.selisihRp]));
-      aoa.push([]);
-      aoa.push(["TOTAL SELISIH RUPIAH","","","","","", totalMinus + totalPlus]);
-
-      const ws = XLSX.utils.aoa_to_sheet(aoa);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Data Selisih");
-      XLSX.writeFile(wb, "Data_Selisih.xlsx");
-    }
-
-    // helper: escape HTML to avoid XSS in table rendering
-    function escapeHtml(str){
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-    // helper to escape JS string used in inline onblur attribute
-    function escapeJs(s){
-      return String(s).replace(/'/g,"\\'");
-    }
-
-    // --- FITUR MENCEGAH DATA HILANG ---
-    const STORAGE_KEY = 'stockOpnameData';
-
-    // Fungsi untuk menyimpan data ke Local Storage
-    function saveToLocalStorage() {
-      try {
-        // Hapus selisihQty dan selisihRp agar tidak disimpan (akan dihitung ulang)
-        const itemsToStore = allItems.map(({ selisihQty, selisihRp, ...rest }) => rest);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(itemsToStore));
-      } catch (e) {
-        console.error("Gagal menyimpan data ke Local Storage:", e);
-      }
-    }
-
-    // Fungsi untuk memuat data dari Local Storage
-    function loadFromLocalStorage() {
-      try {
-        const storedData = localStorage.getItem(STORAGE_KEY);
-        if (storedData) {
-          // Hanya muat jika data yang tersimpan adalah array yang valid
-          const parsedData = JSON.parse(storedData);
-          if (Array.isArray(parsedData)) {
-            allItems = parsedData;
-          }
-        }
-      } catch (e) {
-        console.error("Gagal memuat data dari Local Storage:", e);
-      }
-    }
-
-    loadFromLocalStorage();
-
-    window.addEventListener('beforeunload', function(e) {
-      // Simpan data sebelum user meninggalkan halaman
-      saveToLocalStorage(); 
-      if (allItems.length > 0) {
-        e.preventDefault();
-        e.returnValue = 'Data Stok Opname Anda mungkin belum disimpan ke file. Apakah Anda yakin ingin meninggalkan halaman ini?';
-      }
-    });
-
-    renderTable();
-  </script>
-</body>
-</html>
+        selisihPlusBody.a
