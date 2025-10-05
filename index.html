@@ -33,15 +33,55 @@
     .small { padding:8px 12px; font-size:0.95rem; }
     /* Menghilangkan elemen saat pencarian */
     .hidden { display: none; }
+    
+    /* --- STYLING NAVIGASI BARU --- */
     nav { text-align: center; margin: 20px 0; }
-    nav a { margin: 0 15px; text-decoration: none; color: #3498db; font-weight: bold; }
+    
+    /* Gaya Dasar Tombol Navigasi */
+    nav a { 
+      margin: 0 10px; 
+      text-decoration: none; 
+      font-weight: bold;
+      display: inline-block; 
+      padding: 8px 15px; 
+      border-radius: 5px; 
+      transition: background-color 0.3s, color 0.3s, transform 0.1s; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+      color: white; 
+      background-color: #3498db; /* Biru Default */
+      border: 1px solid #2980b9;
+    }
+    
+    /* Efek Hover untuk semua tombol */
+    nav a:hover {
+      background-color: #2980b9; 
+      color: white;
+      transform: translateY(-1px); /* Efek terangkat */
+      box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+    }
+
+    /* Gaya Spesifik untuk SO Prodsus */
+    nav a[href="so_prodsus.html"] {
+      background-color: #f1c40f; /* Kuning */
+      color: #333; /* Teks gelap agar kontras */
+      font-size: 1.05rem; 
+      border: 1px solid #f39c12;
+    }
+    
+    /* Efek Hover untuk SO Prodsus */
+    nav a[href="so_prodsus.html"]:hover {
+      background-color: #f39c12; /* Kuning lebih gelap */
+    }
+    /* --- AKHIR STYLING NAVIGASI BARU --- */
+    
   </style>
 </head>
 <body>
 
   <nav>
-    <a href="index.html">Menu Utama</a>
-    <a href="program_lain.html" style="color: #f1c40f;">Program Lain</a>
+    <a href="index.html">SO IDM (Reguler)</a>
+    <a href="program_lain.html">LAPORAN SALES</a>
+    <a href="so_prodsus.html">SO Prodsus</a>
   </nav>
 
   <div class="header-container">
@@ -54,7 +94,7 @@
   <div class="container">
     <h2 class="section-title">Input Data Stok Sistem (Multi-Baris)</h2>
     <div class="input-form">
-      <textarea id="dataInput" placeholder="Contoh:&#10;01| Sgm Eksplor...&#10;  | 20087025 | 56.900 | STOK: 5&#10;..."></textarea><br>
+      <textarea id="dataInput" placeholder="Contoh format baru:&#10;01| Sgm Eksplor 3+... (Belajar) 600G&#10;📦 20087025 | Rp 56.900 | STOK: 5&#10;____________________________________&#10;..."></textarea><br>
       <div class="controls-row">
         <button class="small" onclick="addData()">Tambah Stok</button>
         <button class="small download-btn" style="background:#e74c3c;" onclick="resetStok()">Reset Stok Sistem</button>
@@ -130,43 +170,67 @@
     const totalAllEl = document.getElementById('totalAll');
     const searchInput = document.getElementById('searchInput');
     const restoreButton = document.getElementById('restoreButton');
-    const dataInputEl = document.getElementById('dataInput');
+    const dataInputEl = document.getElementById('dataInput'); 
 
-    // Tambah data manual
+    // Helper untuk format Rupiah
+    function formatRupiah(number) {
+        return 'Rp ' + (Number(number) || 0).toLocaleString('id-ID');
+    }
+
+    // Tambah data manual - LOGIKA DIPERBAIKI
     function addData(){
       const rawInput = dataInputEl.value;
       
       const cleanLines = rawInput.split('\n')
-        .map(line => line.replace(/[\u200B-\u200D\uFEFF]/g, '').trim())
+        // Hapus zero-width spaces, non-breaking spaces, & trim
+        .map(line => line.replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '').trim()) 
+        // Filter baris kosong dan separator
         .filter(line => line !== '' && !line.startsWith('____'));
       
-      const newItems = [];
-      for(let i = 0; i < cleanLines.length; i += 2){
+      const parsedItems = [];
+      
+      // Perulangan per dua baris (pasangan nama dan data)
+      for(let i = 0; i < cleanLines.length; i += 2){ 
         if(i + 1 < cleanLines.length){
           const namaLine = cleanLines[i];
           const dataLine = cleanLines[i+1];
           
-          const namaParts = namaLine.split('|').map(p => p.trim());
-          const dataParts = dataLine.split('|').map(p => p.trim());
-          
-          if(namaParts.length >= 2 && dataParts.length >= 4){
-            const namaProduk = namaParts[1];
-            const plu = dataParts[1];
-            const hargaString = dataParts[2].replace(/\./g, '');
-            const harga = Number(hargaString) || 0;
-            const stokString = dataParts[3].replace('STOK:', '').trim();
-            const stokSistem = Number(stokString) || 0;
-            
-            const newItem = {
-              plu: String(plu),
-              nama: String(namaProduk),
-              harga: harga,
-              stokSistem: stokSistem,
-              stokFisik: 0
-            };
-            newItems.push(newItem);
+          if(namaLine.includes('|') && dataLine.includes('📦')){ 
+
+              // Mengambil nama produk setelah '|' pertama
+              const namaProduk = namaLine.split('|').slice(1).join('|').trim();
+              
+              // Menggunakan regex untuk mendapatkan nilai
+              const plu = dataLine.match(/📦\s*(\d+)/)?.[1] || '';
+              // Harga: Mencari angka setelah 'Rp', lalu membersihkan non-digit
+              const hargaMatch = dataLine.match(/Rp\s*([\d\.,]+)/i); 
+              const harga = Number(hargaMatch?.[1].replace(/\D/g, '')) || 0;
+              // Stok: Mencari angka setelah 'STOK:'
+              const stokSistem = Number(dataLine.match(/STOK:\s*(\d+)/i)?.[1]) || 0;
+              
+              if(plu){
+                  parsedItems.push({
+                    plu: String(plu),
+                    nama: String(namaProduk),
+                    harga: harga,
+                    stokSistem: stokSistem,
+                    stokFisik: 0
+                  });
+              }
           }
         }
+      }
+      
+      // Filter duplikasi setelah semua item di-parse
+      const existingPlu = new Set(allItems.map(item => String(item.plu).trim()));
+      const newItems = [];
+      
+      for(const item of parsedItems){
+          const itemPlu = String(item.plu).trim();
+          if (!existingPlu.has(itemPlu)) {
+              newItems.push(item);
+              existingPlu.add(itemPlu); // Mencegah duplikat dalam batch yang sama
+          }
       }
       
       if(newItems.length){
@@ -176,26 +240,26 @@
       dataInputEl.value = '';
     }
 
-    // contoh isi (opsional)
+    // contoh isi (opsional) - DIPERBAIKI agar menggunakan dataInputEl
     function fillExample(){
       const example = [
-        "01| Sgm Eksplor..Pertumbuhan (Belajar) 600G",
-        "  | 20087025 | 56.900 | STOK: 5",
-        "________________________________",
-        "02| Sgm Ananda..0-6 Bulan 400G",
-        "  | 20040340 | 43.200 | STOK: 5",
-        "________________________________",
-        "03| Sgm Ananda..-12 Bulan 400G",
-        "  | 20040312 | 43.200 | STOK: 4",
-        "________________________________",
-        "04| Sgm Eksplor..Pertumbuhan Madu 900G",
-        "  | 20066494 | 79.600 | STOK: 3",
-        "________________________________",
-        "05| Bebelac 4..Bubuk Madu 400G/350G",
-        "  | 20035635 | 68.100 | STOK: 2"
+        "01| Sgm Eksplor 3+... (Belajar) 600G",
+        "📦 20087025 | Rp 56.900 | STOK: 5",
+        "____________________________________",
+        "02| Sgm Ananda 1... Bulan 400G",
+        "📦 20040340 | Rp 43.200 | STOK: 5",
+        "____________________________________",
+        "03| Sgm Ananda 2... Bulan 400G",
+        "📦 20040312 | Rp 43.200 | STOK: 4",
+        "____________________________________",
+        "04| Sgm Eksplor 5+... Madu 900G",
+        "📦 20066494 | Rp 79.600 | STOK: 3",
+        "____________________________________",
+        "05| Bebelac 4... Bubuk Madu 400G/350G",
+        "📦 20035635 | Rp 68.100 | STOK: 2"
       ].join('\n');
       
-      document.getElementById('dataInput').value = example;
+      dataInputEl.value = example; // Menggunakan global dataInputEl
     }
 
     // reset -> hapus semua data stok sistem
@@ -234,9 +298,9 @@
           <td>${index + 1}</td>
           <td>${escapeHtml(String(it.plu))}</td>
           <td>${escapeHtml(String(it.nama))}</td>
-          <td>${escapeHtml(String(it.harga))}</td>
+          <td>${formatRupiah(it.harga)}</td>
           <td>${escapeHtml(String(it.stokSistem))}</td>
-          <td class="stok-fisik-cell"><input type="text" inputmode="numeric" value="${it.stokFisik ? escapeHtml(String(it.stokFisik)) : ''}" onblur="updateFisik('${escapeJs(it.plu)}', this)"></td>
+          <td class="stok-fisik-cell"><input type="text" inputmode="numeric" value="${it.stokFisik || ''}" onblur="updateFisik('${escapeJs(it.plu)}', this)"></td>
           <td class="selisih-qty"></td>
           <td class="selisih-rp"></td>
         `;
@@ -251,8 +315,11 @@
       const pluKey = String(plu).trim();
       const item = allItems.find(i => String(i.plu).trim() === pluKey);
       if(!item) return;
-      const parts = String(inputEl.value || '').split(',').map(v => parseInt(v.trim()) || 0);
+      
+      // Menggunakan regex untuk memisahkan angka yang dipisahkan oleh non-digit (termasuk koma)
+      const parts = String(inputEl.value || '').split(/[^0-9]+/).map(v => parseInt(v.trim()) || 0);
       const total = parts.reduce((a,b)=>a+b, 0);
+      
       item.stokFisik = total;
       inputEl.value = total;
       updateAll();
@@ -287,7 +354,7 @@
           const qcell = tr.querySelector('.selisih-qty');
           const rcell = tr.querySelector('.selisih-rp');
           qcell.textContent = item.selisihQty;
-          rcell.textContent = item.selisihRp;
+          rcell.textContent = formatRupiah(item.selisihRp); 
           qcell.className = 'selisih-qty';
           rcell.className = 'selisih-rp';
           if (item.selisihQty < 0) { qcell.classList.add('selisih-negatif'); rcell.classList.add('selisih-negatif'); }
@@ -300,19 +367,19 @@
       
       minusItems.forEach((r, i) => {
         const row = document.createElement('tr');
-        row.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(r.plu)}</td><td>${escapeHtml(r.nama)}</td><td>${escapeHtml(r.stokSistem)}</td><td>${escapeHtml(r.stokFisik)}</td><td>${escapeHtml(r.selisihQty)}</td><td>${escapeHtml(r.selisihRp)}</td>`;
+        row.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(r.plu)}</td><td>${escapeHtml(r.nama)}</td><td>${escapeHtml(r.stokSistem)}</td><td>${escapeHtml(r.stokFisik)}</td><td>${escapeHtml(r.selisihQty)}</td><td>${formatRupiah(r.selisihRp)}</td>`; 
         selisihMinusBody.appendChild(row);
       });
       plusItems.forEach((r, i) => {
         const row = document.createElement('tr');
-        row.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(r.plu)}</td><td>${escapeHtml(r.nama)}</td><td>${escapeHtml(r.stokSistem)}</td><td>${escapeHtml(r.stokFisik)}</td><td>${escapeHtml(r.selisihQty)}</td><td>${escapeHtml(r.selisihRp)}</td>`;
+        row.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(r.plu)}</td><td>${escapeHtml(r.nama)}</td><td>${escapeHtml(r.stokSistem)}</td><td>${escapeHtml(r.stokFisik)}</td><td>${escapeHtml(r.selisihQty)}</td><td>${formatRupiah(r.selisihRp)}</td>`; 
         selisihPlusBody.appendChild(row);
       });
 
       selisihContainer.style.display = anySelisih ? 'block' : 'none';
-      totalMinusEl.textContent = 'Total Rupiah Minus: Rp ' + totalMinusRp.toLocaleString('id-ID');
-      totalPlusEl.textContent  = 'Total Rupiah Plus: Rp ' + totalPlusRp.toLocaleString('id-ID');
-      totalAllEl.textContent   = 'Total Selisih Rupiah: Rp ' + (totalMinusRp + totalPlusRp).toLocaleString('id-ID');
+      totalMinusEl.textContent = 'Total Rupiah Minus: ' + formatRupiah(totalMinusRp);
+      totalPlusEl.textContent  = 'Total Rupiah Plus: ' + formatRupiah(totalPlusRp);
+      totalAllEl.textContent   = 'Total Selisih Rupiah: ' + formatRupiah(totalMinusRp + totalPlusRp);
 
       window._minusItems = minusItems;
       window._plusItems = plusItems;
@@ -326,13 +393,16 @@
       const rows = document.querySelectorAll('#stokTable tbody tr');
       let visibleCount = 0;
       rows.forEach(tr => {
-        const plu = tr.cells[1].textContent.trim().toLowerCase();
-        const name = tr.cells[2].textContent.trim().toLowerCase();
-        const isMatch = plu.includes(q) || name.includes(q);
-        tr.style.display = isMatch ? '' : 'none';
-        
-        if (isMatch) {
-            tr.cells[0].textContent = ++visibleCount;
+        // Hanya memproses baris yang memiliki sel (untuk menghindari baris kosong yang mungkin ada)
+        if(tr.cells.length > 2) {
+            const plu = tr.cells[1].textContent.trim().toLowerCase();
+            const name = tr.cells[2].textContent.trim().toLowerCase();
+            const isMatch = plu.includes(q) || name.includes(q);
+            tr.style.display = isMatch ? '' : 'none';
+            
+            if (isMatch) {
+                tr.cells[0].textContent = ++visibleCount;
+            }
         }
       });
     }
@@ -354,20 +424,29 @@
         const data = new Uint8Array(ev.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+        // Menggunakan skip_header: true dan kemudian memproses objek
+        const rows = XLSX.utils.sheet_to_json(firstSheet, { header: ["PLU","Nama Barang","Harga","Stok Sistem","Stok Fisik"] });
+        
         const newItems = [];
         rows.slice(1).forEach(r=>{
-          if(r && r.length >= 4){
+          // Mengambil nilai dari kolom-kolom yang diharapkan
+          if(r && r.PLU){
             newItems.push({
-              plu: String(r[0]),
-              nama: String(r[1]),
-              harga: Number(r[2]) || 0,
-              stokSistem: Number(r[3]) || 0,
-              stokFisik: Number(r[4]) || 0
+              plu: String(r.PLU),
+              nama: String(r['Nama Barang'] || ''),
+              // Mengubah string menjadi angka
+              harga: Number(r.Harga) || 0,
+              stokSistem: Number(r['Stok Sistem']) || 0,
+              stokFisik: Number(r['Stok Fisik']) || 0
             });
           }
         });
-        allItems = newItems;
+
+        // Mencegah duplikasi: tambahkan hanya PLU yang belum ada
+        const existingPlu = new Set(allItems.map(item => String(item.plu).trim()));
+        const uniqueNewItems = newItems.filter(item => !existingPlu.has(String(item.plu).trim()));
+
+        allItems = allItems.concat(uniqueNewItems);
         renderTable();
       };
       reader.readAsArrayBuffer(file);
@@ -381,15 +460,22 @@
       
       rowsToExport.forEach(row => {
           const cells = [...row.cells];
+          // Mengambil nilai dari input untuk Stok Fisik, atau textContent jika tidak ada input
+          const stokFisikValue = cells[5].querySelector('input') ? cells[5].querySelector('input').value : cells[5].textContent;
+          
+          // Mengambil nilai Rupiah dalam bentuk angka (tanpa Rp) untuk ekspor yang bersih
+          const hargaClean = cells[3].textContent.replace('Rp', '').replace(/\./g, '').trim();
+          const selisihRpText = cells[7].textContent.replace('Rp', '').replace(/\./g, '').trim();
+
           const rowData = [
               cells[0].textContent,
               cells[1].textContent,
               cells[2].textContent,
-              cells[3].textContent,
+              Number(hargaClean), // Harga (Angka Bersih)
               cells[4].textContent,
-              cells[5].querySelector('input') ? cells[5].querySelector('input').value : cells[5].textContent,
+              stokFisikValue,
               cells[6].textContent,
-              cells[7].textContent
+              Number(selisihRpText) // Selisih Rupiah (Angka Bersih)
           ];
           dataToExport.push(rowData);
       });
@@ -423,7 +509,7 @@
       const ws = XLSX.utils.aoa_to_sheet(aoa);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Data Selisih");
-      XDXL.writeFile(wb, "Data_Selisih.xlsx");
+      XLSX.writeFile(wb, "Data_Selisih.xlsx");
     }
 
     // helper: escape HTML to avoid XSS in table rendering
@@ -440,13 +526,15 @@
       return String(s).replace(/'/g,"\\'");
     }
 
-    // --- FITUR BARU: MENCEGAH DATA HILANG ---
+    // --- FITUR MENCEGAH DATA HILANG ---
     const STORAGE_KEY = 'stockOpnameData';
 
     // Fungsi untuk menyimpan data ke Local Storage
     function saveToLocalStorage() {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(allItems));
+        // Hapus selisihQty dan selisihRp agar tidak disimpan (akan dihitung ulang)
+        const itemsToStore = allItems.map(({ selisihQty, selisihRp, ...rest }) => rest);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(itemsToStore));
       } catch (e) {
         console.error("Gagal menyimpan data ke Local Storage:", e);
       }
@@ -457,7 +545,11 @@
       try {
         const storedData = localStorage.getItem(STORAGE_KEY);
         if (storedData) {
-          allItems = JSON.parse(storedData);
+          // Hanya muat jika data yang tersimpan adalah array yang valid
+          const parsedData = JSON.parse(storedData);
+          if (Array.isArray(parsedData)) {
+            allItems = parsedData;
+          }
         }
       } catch (e) {
         console.error("Gagal memuat data dari Local Storage:", e);
@@ -467,9 +559,11 @@
     loadFromLocalStorage();
 
     window.addEventListener('beforeunload', function(e) {
+      // Simpan data sebelum user meninggalkan halaman
+      saveToLocalStorage(); 
       if (allItems.length > 0) {
         e.preventDefault();
-        e.returnValue = '';
+        e.returnValue = 'Data Stok Opname Anda mungkin belum disimpan ke file. Apakah Anda yakin ingin meninggalkan halaman ini?';
       }
     });
 
