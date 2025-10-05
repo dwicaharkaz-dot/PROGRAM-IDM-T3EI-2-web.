@@ -185,15 +185,15 @@
 
     <div class="input-section">
         <div class="input-group">
-            <label for="current-date">Tanggal Hari Ini:</label>
+            <label for="current-date">Tanggal:</label>
             <input type="text" id="current-date" value="7/9">
         </div>
         <div class="input-group">
-            <label for="days-in-month">Jumlah Hari dalam Bulan:</label>
+            <label for="days-in-month">Jumlah tgl dlm Bulan ini:</label>
             <input type="text" id="days-in-month" value="30" inputmode="numeric" pattern="[0-9]*">
         </div>
         <div class="input-group">
-            <label for="sales-net">Sales Net Hari Ini:</label>
+            <label for="sales-net">Sales Net:</label>
             <input type="text" id="sales-net" value="" inputmode="numeric" pattern="[0-9]*">
             <div class="reset-container">
                 <button class="reset-button" ondblclick="resetInput('sales-net')">Reset</button>
@@ -209,7 +209,7 @@
             </div>
         </div>
         <div class="input-group">
-            <label for="struk">Struk Hari Ini:</label>
+            <label for="struk">Struk:</label>
             <input type="text" id="struk" value="" inputmode="numeric" pattern="[0-9]*">
             <div class="reset-container">
                 <button class="reset-button" ondblclick="resetInput('struk')">Reset</button>
@@ -241,7 +241,7 @@
             </div>
         </div>
         <div class="input-group">
-            <label for="struk-harian-bln-lalu">Struk Perhari Bulan Lalu:</label>
+            <label for="struk-harian-bln-lalu">STD Bulan Lalu:</label>
             <input type="text" id="struk-harian-bln-lalu" value="" inputmode="numeric" pattern="[0-9]*">
             <div class="reset-container">
                 <button class="reset-button" ondblclick="resetInput('struk-harian-bln-lalu')">Reset</button>
@@ -371,18 +371,15 @@
         const output1 = `
             <ul>
                 <li>Seles Net: <span class="result">Rp${formatNumber(salesNet)}</span></li>
-                <li>AKM Seles kemarin: <span class="result">Rp${formatNumber(akmSalesKemarin)}</span></li>
                 <li>- AKM Seles: <span class="result">Rp${formatNumber(akmSales)}</span></li>
                 <li>- SPD: <span class="result">Rp${formatNumber(spd)}</span></li>
-                <li>- Target SPD: <span class="result">Rp${formatNumber(targetSpd)}</span></li>
                 <li>- ACH: <span class="result">${formatNumber(ach)}%</span></li>
                 <li>SPD bulan lalu: <span class="result">Rp${formatNumber(spdBlnLalu)}</span></li>
                 <li>- Growth: <span class="result">${formatNumber(growthSpd)}%</span></li>
                 <li>Struk: <span class="result">${formatNumber(struk)}</span></li>
-                <li>Akm struk lalu: <span class="result">${formatNumber(akmStrukKemarin)}</span></li>
                 <li>- Akm struk: <span class="result">${formatNumber(akmStruk)}</span></li>
-                <li>- Struk perhari: <span class="result">${formatNumber(strukPerhari)}</span></li>
-                <li>Struk perhari bulan lalu: <span class="result">${formatNumber(strukHarianBlnLalu)}</span></li>
+                <li>- STD: <span class="result">${formatNumber(strukPerhari)}</span></li>
+                <li>STD bulan lalu: <span class="result">${formatNumber(strukHarianBlnLalu)}</span></li>
                 <li>- Growth: <span class="result">${formatNumber(growthStruk)}%</span></li>
                 <li>- APC: <span class="result">Rp${formatNumber(apc)}</span></li>
                 <li>APC bulan lalu: <span class="result">Rp${formatNumber(apcBlnLalu)}</span></li>
