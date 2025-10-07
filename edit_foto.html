@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Batch Foto Gabungan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --accent-color: #ff7e5f;
+            --text-color: #333;
+            --light-text-color: #f8f8f8;
+            --bg-light: #f4f7f6;
+            --gradient-blue-purple: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+            --gradient-orange-pink: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+            --gradient-input-bg: linear-gradient(135deg, #fceaff 0%, #d4e7ff 100%); 
+        }
+
+        /* Reset & Base Styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; line-height: 1.6; color: var(--text-color); background-color: var(--bg-light); scroll-behavior: smooth; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+        /* Gaya untuk Halaman Login (BARU) */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(244, 247, 246, 0.95);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .login-form {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-form h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .password-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .password-container input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .password-container input:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 5px rgba(37, 117, 252, 0.5);
+            outline: none;
+        }
+
+        .toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #666;
+            transition: color 0.2s;
+        }
+
+        .toggle-password:hover {
+            color: var(--primary-color);
+        }
+
+        .login-form button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--gradient-blue-purple);
+            color: var(--light-text-color);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: opacity 0.3s;
+        }
+
+        .login-form button:hover {
+            opacity: 0.9;
+        }
+        /* Akhir Gaya Login */
+
+        /* Header & Logo */
+        header { background: var(--gradient-blue-purple); color: var(--light-text-color); padding: 10px 0; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
+        .navbar { display: flex; justify-content: space-between; align-items: center; }
+        .navbar .brand { font-size: 1.5em; font-weight: 700; text-decoration: none; color: var(--light-text-color); }
+
+        /* LOGO BULAT SEMPURNA */
+        .navbar .logo-right img {
+            height: 55px; 
+            width: 55px;  
+            margin-left: 15px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3); 
+            background-color: #fff; 
+            padding: 2px;
+            border-radius: 50%; 
+            object-fit: cover; 
+        }
+
+        /* Upload Section & Drop Area Highlighting */
+        .upload-section { padding: 30px 0; text-align: center; } 
+        .upload-section h2 { font-size: 1.7em; margin-bottom: 15px; color: var(--primary-color); } 
+        
+        .upload-box {
+            background-color: #fff; border: 2px dashed var(--secondary-color); border-radius: 15px; 
+            padding: 30px; 
+            margin: 0 auto 20px auto; max-width: 600px; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05); 
+            position: relative; 
+            transition: all 0.3s;
+        }
+
+        .upload-box input[type="file"] { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            opacity: 0; 
+            cursor: pointer; 
+            z-index: 10; 
+        }
+        
+        .upload-box.highlight {
+             border-color: var(--primary-color);
+             box-shadow: 0 5px 20px rgba(106, 17, 203, 0.3);
+             background-color: #e0f7fa; 
+        }
+        .upload-box:hover {
+             border-color: var(--primary-color);
+             box-shadow: 0 5px 20px rgba(106, 17, 203, 0.2);
+        }
+        .upload-box i { font-size: 2.5em; color: var(--primary-color); margin-bottom: 10px; } 
+        .upload-box p { font-size: 1em; } 
+        
+        /* Kolom Input Data (Berwarna & Menarik) - Sisanya sama */
+        .timestamp-controls { 
+            background: var(--gradient-input-bg); 
+            padding: 25px; 
+            border-radius: 15px; 
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2); 
+            margin-top: 25px; 
+            text-align: left; 
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .input-item { display: flex; flex-direction: column; }
+
+        .input-item label { 
+            color: var(--primary-color); 
+            font-weight: 600; 
+            margin-bottom: 5px; 
+            font-size: 0.9em;
+        }
+
+        .input-item input { 
+            padding: 10px; 
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.9); 
+            color: var(--text-color);
+            transition: all 0.3s;
+        }
+
+        .input-item input:focus { 
+            background-color: #fff; 
+            border-color: var(--secondary-color); 
+            box-shadow: 0 0 5px rgba(37, 117, 252, 0.5);
+            outline: none;
+        }
+
+        /* Pengaturan Ukuran Font Timestamp */
+        #timestampSizeControl { margin-top: 15px; padding: 15px; background-color: rgba(255,255,255,0.7); border-radius: 10px; border: 1px solid rgba(255,255,255,0.5); }
+        #timestampSizeControl label { color: var(--primary-color); }
+
+        .action-buttons { display: flex; gap: 10px; margin-top: 15px; justify-content: center; }
+        .action-buttons button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            background: var(--gradient-blue-purple);
+            color: var(--light-text-color);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .action-buttons button:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+        .action-buttons button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Hasil Gabungan (Grid Adaptif) */
+        .result-section { padding: 30px 0; }
+        .result-section h2 { font-size: 1.8em; margin-bottom: 15px; color: var(--primary-color); text-align: center; }
+        
+        .combined-result-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px auto;
+            max-width: 100%;
+            overflow-x: auto; 
+            border: 3px solid var(--secondary-color);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            background-color: #fff;
+        }
+
+        #combinedCanvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        .placeholder-text {
+            padding: 50px;
+            color: #aaa;
+            font-style: italic;
+        }
+
+        /* Footer */
+        footer { background: var(--primary-color); color: var(--light-text-color); text-align: center; padding: 20px 0; margin-top: 30px; border-top-left-radius: 30px; border-top-right-radius: 30px; }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 1.7em; }
+            .upload-section h2 { font-size: 1.5em; }
+            .navbar .logo-right img { height: 40px; width: 40px; }
+            .input-group { grid-template-columns: 1fr; }
+            .action-buttons { flex-direction: column; }
+            .action-buttons button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-form">
+            <h2>Akses Terbatas 🔒</h2>
+            <p>Masukkan Kata Sandi untuk Melanjutkan</p>
+            <div class="password-container">
+                <input type="password" id="passwordInput" placeholder="Masukkan Kata Sandi Anda" required>
+                <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+            </div>
+            <button onclick="attemptLogin()">Masuk</button>
+            <p id="loginMessage" style="color: red; margin-top: 10px;"></p>
+        </div>
+    </div>
+    <header>
+        <div class="container navbar">
+            <a href="#" class="brand">Creative Batch Editor</a>
+            <div class="logo-right">
+                <img src="1000301458.png" alt="Logo Kamera Warna-warni"> 
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1>Batch Timestamp: Edit & Gabung Foto</h1>
+                <p>Unggah maksimal 8 foto untuk digabungkan menjadi satu file dengan timestamp kustom.</p>
+                <a href="#upload-section" class="btn-primary">Mulai Proses!</a>
+            </div>
+        </section>
+
+        <section id="upload-section" class="upload-section">
+            <div class="container">
+                <h2>1. Unggah Foto (Maksimal 8)</h2>
+                <div class="upload-box" id="dropArea">
+                    <i class="fas fa-cloud-upload-alt"></i> 
+                    <p>Seret & Lepas Foto di Sini atau Klik untuk Memilih (Maks. 8 Foto)</p>
+                    <input type="file" id="photoUpload" multiple accept="image/*">
+                </div>
+                <small>Jumlah Foto Terpilih: <span id="fileCount">0</span>/8</small>
+
+                <div class="timestamp-controls">
+                    <h3>2. Input Data & Pengaturan Timestamp</h3>
+                    <div class="input-group">
+                        <div class="input-item"><label for="dateTimeInput">Waktu/Tanggal:</label><input type="text" id="dateTimeInput" placeholder="Senin, 06 Oktober 2025 17:48:24"></div>
+                        <div class="input-item"><label for="bearingInput">Arah Mata Angin:</label><input type="text" id="bearingInput" placeholder="298° NW" value="298° NW"></div>
+                        <div class="input-item"><label for="addressInput">Alamat Detail:</label><input type="text" id="addressInput" placeholder="Jalan Sambeng Kecamatan Kasiman" value="Jalan Sambeng Kecamatan Kasiman"></div>
+                        <div class="input-item"><label for="cityInput">Kota/Kabupaten:</label><input type="text" id="cityInput" placeholder="Kabupaten Bojonegoro Jawa Timur" value="Kabupaten Bojonegoro Jawa Timur"></div>
+                        <div class="input-item"><label for="altitudeInput">Ketinggian (msnm):</label><input type="text" id="altitudeInput" placeholder="119.3msnm" value="119.3msnm"></div>
+                        <div class="input-item"><label for="speedInput">Kecepatan (km/h):</label><input type="text" id="speedInput" placeholder="0.0km/h" value="0.0km/h"></div>
+                        <div class="input-item"><label for="indexInput">Nomor Indeks:</label><input type="text" id="indexInput" placeholder="383" value="383"></div>
+                    </div>
+                    
+                    <div id="timestampSizeControl">
+                        <label for="timestampSizeSlider">Ukuran Font Timestamp (Skala 1 - 10): <span id="currentSizeValue">5</span></label>
+                        <input type="range" id="timestampSizeSlider" min="1" max="10" value="5" step="0.5">
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button onclick="processAllImages()" id="processButton" disabled>3. Proses & Gabungkan Foto</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="result-section" class="result-section">
+            <div class="container">
+                <h2>4. Hasil Gabungan</h2>
+                <div class="combined-result-container">
+                    <canvas id="combinedCanvas"></canvas>
+                    <p class="placeholder-text" id="canvasPlaceholder">Hasil gabungan (jika ada) akan ditampilkan di sini. Tata letak akan menggunakan Grid 2xN.</p>
+                </div>
+                <div class="action-buttons">
+                    <button onclick="downloadCombinedImage()" id="downloadCombinedButton" disabled>Unduh Hasil Gabungan (.jpg)</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Creative Batch Editor. Hak Cipta Dilindungi.</p>
+        </div>
+    </footer>
+
+    <script>
+        const photoUpload = document.getElementById('photoUpload');
+        const processButton = document.getElementById('processButton');
+        const downloadCombinedButton = document.getElementById('downloadCombinedButton');
+        const fileCountSpan = document.getElementById('fileCount');
+        const combinedCanvas = document.getElementById('combinedCanvas');
+        const canvasPlaceholder = document.getElementById('canvasPlaceholder');
+        const timestampSizeSlider = document.getElementById('timestampSizeSlider');
+        const currentSizeValue = document.getElementById('currentSizeValue');
+        const ctxCombined = combinedCanvas.getContext('2d');
+        const dropArea = document.getElementById('dropArea');
+        
+        let uploadedFiles = []; 
+
+        // --- FUNGSI LOGIN SISI KLIEN (TIDAK AMAN) ---
+        const CORRECT_PASSWORD = "123"; // GANTI DENGAN SANDI PILIHAN ANDA
+
+        function attemptLogin() {
+            const inputPassword = document.getElementById('passwordInput').value;
+            const loginOverlay = document.getElementById('login-overlay');
+            const loginMessage = document.getElementById('loginMessage');
+            
+            if (inputPassword === CORRECT_PASSWORD) {
+                loginOverlay.style.display = 'none'; // Sembunyikan overlay
+                alert("Login Berhasil!");
+            } else {
+                loginMessage.textContent = "Kata sandi salah. Silakan coba lagi.";
+                document.getElementById('passwordInput').value = ''; // Kosongkan input
+            }
+        }
+
+        // --- FUNGSI TOGGLE PASSWORD (Tombol Mata) (BARU) ---
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('passwordInput');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            // Ganti ikon mata
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+        // --- AKHIR FUNGSI LOGIN ---
+
+        // Event listener untuk klik atau memilih file (melalui input file transparan)
+        photoUpload.addEventListener('change', handleFiles);
+        timestampSizeSlider.addEventListener('input', () => {
+            currentSizeValue.textContent = timestampSizeSlider.value;
+        });
+
+        // Event listener untuk drag and drop files
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'), false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'), false);
+        });
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function preventDefaults (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles({ target: { files: files } });
+        }
+
+
+        function handleFiles(event) {
+            const files = Array.from(event.target.files).filter(file => file.type.startsWith('image/'));
+            
+            uploadedFiles = files.slice(0, 8); // Batasi hingga 8 file
+            
+            fileCountSpan.textContent = uploadedFiles.length;
+            processButton.disabled = uploadedFiles.length === 0;
+            downloadCombinedButton.disabled = true;
+            canvasPlaceholder.style.display = 'block';
+            combinedCanvas.style.display = 'none';
+        }
+        
+        async function processAllImages() {
+            if (uploadedFiles.length === 0) {
+                alert("Silakan unggah minimal satu foto!");
+                return;
+            }
+
+            processButton.disabled = true;
+            processButton.textContent = 'Memproses & Menggabungkan...';
+            canvasPlaceholder.style.display = 'none';
+
+            const data = {
+                dateTime: document.getElementById('dateTimeInput').value,
+                bearing: document.getElementById('bearingInput').value,
+                address: document.getElementById('addressInput').value,
+                city: document.getElementById('cityInput').value,
+                altitude: 'Altitude:' + document.getElementById('altitudeInput').value,
+                speed: 'Speed:' + document.getElementById('speedInput').value,
+                index: 'Index number:' + document.getElementById('indexInput').value
+            };
+            const textLines = [data.dateTime, data.bearing, data.address, data.city, data.altitude, data.speed, data.index];
+            const sizeScale = parseFloat(timestampSizeSlider.value); 
+
+            let processedCanvases = [];
+            
+            for (const file of uploadedFiles) {
+                const imgObj = await readFileAsImageObject(file);
+                const processedCanvas = await addTimestampToImage(imgObj, textLines, sizeScale);
+                processedCanvases.push(processedCanvas);
+            }
+            
+            const numImages = processedCanvases.length;
+            let cols = 2; 
+            let rows = Math.ceil(numImages / cols);
+            
+            if (numImages === 1) {
+                cols = 1;
+                rows = 1;
+            } else {
+                cols = 2;
+                rows = Math.ceil(numImages / cols);
+            }
+
+            let maxImageWidth = 0;
+            let maxImageHeight = 0;
+            
+            processedCanvases.forEach(canvas => {
+                if (canvas.width > maxImageWidth) maxImageWidth = canvas.width;
+                if (canvas.height > maxImageHeight) maxImageHeight = canvas.height;
+            });
+            
+            const cellWidth = maxImageWidth;
+            const cellHeight = maxImageHeight;
+
+            combinedCanvas.width = cellWidth * cols;
+            combinedCanvas.height = cellHeight * rows;
+            ctxCombined.clearRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+            
+            for (let i = 0; i < numImages; i++) {
+                const canvas = processedCanvases[i];
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                
+                const x = col * cellWidth;
+                const y = row * cellHeight;
+                
+                ctxCombined.drawImage(canvas, x, y, cellWidth, cellHeight);
+            }
+            
+            combinedCanvas.style.display = 'block';
+            processButton.textContent = 'Proses Selesai!';
+            processButton.disabled = false;
+            downloadCombinedButton.disabled = false;
+        }
+
+        function readFileAsImageObject(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // FUNGSI addTimestampToImage (Sudah Konsisten)
+        function addTimestampToImage(img, textLines, sizeScale) {
+            return new Promise((resolve) => {
+                const tempCanvas = document.createElement('canvas');
+                const ctx = tempCanvas.getContext('2d');
+
+                tempCanvas.width = img.width;
+                tempCanvas.height = img.height;
+                ctx.drawImage(img, 0, 0); 
+
+                const baseDimension = (tempCanvas.width + tempCanvas.height) / 2;
+                const dynamicFontSize = Math.floor(baseDimension / 30) * (sizeScale / 5); 
+                
+                const lineHeight = dynamicFontSize * 1.5; 
+                const margin = Math.floor(baseDimension * 0.02); 
+
+                const x = tempCanvas.width - margin; 
+                let y = tempCanvas.height - (textLines.length * lineHeight) - margin; 
+
+                ctx.font = `bold ${dynamicFontSize}px Arial`;
+                ctx.fillStyle = '#FFFFFF';
+                ctx.textAlign = 'right'; 
+                ctx.textBaseline = 'top';
+
+                textLines.forEach((line) => {
+                    ctx.strokeStyle = '#000000'; 
+                    ctx.lineWidth = dynamicFontSize / 15; 
+                    ctx.strokeText(line, x, y);
+                    
+                    ctx.fillText(line, x, y);
+                    
+                    y += lineHeight; 
+                });
+
+                resolve(tempCanvas); 
+            });
+        }
+
+        function downloadCombinedImage() {
+            if (combinedCanvas.width === 0 || combinedCanvas.height === 0) {
+                alert("Tidak ada gambar gabungan untuk diunduh!");
+                return;
+            }
+            
+            const imageURL = combinedCanvas.toDataURL('image/jpeg', 0.9);
+
+            const a = document.createElement('a');
+            a.href = imageURL;
+            a.download = `foto_gabungan_edited_${new Date().getTime()}.jpg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function setInitialDateTime() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            const formattedDate = now.toLocaleDateString('id-ID', options).replace(/, /g, ', ').replace(/ /g, ' ').replace(/-/g, ':');
+            document.getElementById('dateTimeInput').value = formattedDate.replace('pukul', '').trim();
+        }
+        setInitialDateTime();
+    </script>
+
+</body>
+</html>
