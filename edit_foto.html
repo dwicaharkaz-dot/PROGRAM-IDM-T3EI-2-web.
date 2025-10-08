@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Batch Foto Gabungan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
+    
+    <style>
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --accent-color: #ff7e5f;
+            --text-color: #333;
+            --light-text-color: #f8f8f8;
+            --bg-light: #f4f7f6;
+            --gradient-blue-purple: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+            --gradient-orange-pink: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+            --gradient-input-bg: linear-gradient(135deg, #fceaff 0%, #d4e7ff 100%); 
+        }
+
+        /* Reset & Base Styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; line-height: 1.6; color: var(--text-color); background-color: var(--bg-light); scroll-behavior: smooth; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+        /* Gaya untuk Halaman Login */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(244, 247, 246, 0.95); z-index: 1000;
+            display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px);
+        }
+        .login-form {
+            background-color: #fff; padding: 40px; border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); width: 90%; max-width: 400px; text-align: center;
+        }
+        .login-form h2 { color: var(--primary-color); margin-bottom: 20px; }
+        .password-container { position: relative; margin-bottom: 20px; }
+        .password-container input {
+            width: 100%; padding: 12px 40px 12px 15px; border: 2px solid #ccc;
+            border-radius: 8px; transition: all 0.3s;
+        }
+        .password-container input:focus { border-color: var(--secondary-color); box-shadow: 0 0 5px rgba(37, 117, 252, 0.5); outline: none; }
+        .toggle-password {
+            position: absolute; top: 50%; right: 15px; transform: translateY(-50%);
+            cursor: pointer; color: #666; transition: color 0.2s;
+        }
+        .toggle-password:hover { color: var(--primary-color); }
+        .login-form button {
+            width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: 600;
+            cursor: pointer; background: var(--gradient-blue-purple); color: var(--light-text-color);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); transition: opacity 0.3s;
+        }
+        .login-form button:hover { opacity: 0.9; }
+
+        /* Header & Logo */
+        header { background: var(--gradient-blue-purple); color: var(--light-text-color); padding: 10px 0; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
+        .navbar { display: flex; justify-content: space-between; align-items: center; }
+        .navbar .brand { font-size: 1.5em; font-weight: 700; text-decoration: none; color: var(--light-text-color); }
+        .navbar .logo-right img {
+            height: 55px; width: 55px; margin-left: 15px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            background-color: #fff; padding: 2px; border-radius: 50%; object-fit: cover;
+        }
+
+        /* Upload Section & Drop Area Highlighting */
+        .upload-section { padding: 30px 0; text-align: center; } 
+        .upload-section h2 { font-size: 1.7em; margin-bottom: 15px; color: var(--primary-color); } 
+        .upload-box {
+            background-color: #fff; border: 2px dashed var(--secondary-color); border-radius: 15px; 
+            padding: 30px; margin: 0 auto 20px auto; max-width: 600px; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05); position: relative; transition: all 0.3s;
+        }
+        .upload-box input[type="file"] { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            opacity: 0; cursor: pointer; z-index: 10; 
+        }
+        .upload-box.highlight {
+             border-color: var(--primary-color); box-shadow: 0 5px 20px rgba(106, 17, 203, 0.3); background-color: #e0f7fa; 
+        }
+        .upload-box:hover {
+             border-color: var(--primary-color); box-shadow: 0 5px 20px rgba(106, 17, 203, 0.2);
+        }
+        .upload-box i { font-size: 2.5em; color: var(--primary-color); margin-bottom: 10px; } 
+        .upload-box p { font-size: 1em; } 
+        
+        /* Kolom Input Data */
+        .timestamp-controls { 
+            background: var(--gradient-input-bg); padding: 25px; border-radius: 15px; 
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2); margin-top: 25px; text-align: left; 
+        }
+        .input-group {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 15px; margin-bottom: 15px;
+        }
+        .input-item { display: flex; flex-direction: column; }
+        .input-item label { 
+            color: var(--primary-color); font-weight: 600; margin-bottom: 5px; font-size: 0.9em;
+        }
+        .input-item input { 
+            padding: 10px; border: 2px solid #ccc; border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.9); color: var(--text-color); transition: all 0.3s;
+        }
+        .input-item input:focus { 
+            background-color: #fff; border-color: var(--secondary-color); 
+            box-shadow: 0 0 5px rgba(37, 117, 252, 0.5); outline: none;
+        }
+
+        /* Pengaturan Ukuran Font Timestamp & Peta */
+        .control-container { 
+            display: flex; gap: 20px; margin-bottom: 10px; 
+            flex-wrap: wrap; 
+        }
+        .control-group { 
+            margin-top: 15px; padding: 15px; background-color: rgba(255,255,255,0.7); 
+            border-radius: 10px; border: 1px solid rgba(255,255,255,0.5); 
+            flex: 1 1 45%; 
+        }
+        .control-group label { color: var(--primary-color); display: block; text-align: center; }
+
+        .slider-container { display: flex; align-items: center; justify-content: center; margin-top: 10px; }
+        .slider-container button { 
+            padding: 5px 10px; margin: 0 10px; border: 1px solid var(--primary-color); 
+            background-color: #fff; color: var(--primary-color); cursor: pointer; border-radius: 5px;
+        }
+        .slider-container input[type="range"] { flex-grow: 1; }
+
+        .checkbox-item { 
+            display: flex; align-items: center; justify-content: center; margin-top: 10px;
+            font-weight: 600; color: var(--primary-color);
+        }
+        .checkbox-item input { margin-right: 10px; width: auto; }
+        
+        /* Tambahan untuk input file peta */
+        .map-upload-row { 
+            display: flex; align-items: center; justify-content: space-between; 
+            margin-bottom: 10px; padding: 5px 0; 
+        }
+        .map-upload-row label { 
+            font-weight: 600; font-size: 0.9em; flex-shrink: 0; 
+            color: var(--primary-color); /* Warna diubah menjadi primary-color */
+        }
+        .map-upload-row input[type="file"] { 
+            width: 60%; margin-left: 10px; border: 1px solid #ccc; 
+            padding: 3px; border-radius: 5px; font-weight: 400; font-size: 0.8em; 
+        }
+
+        .action-buttons { display: flex; gap: 10px; margin-top: 15px; justify-content: center; }
+        .action-buttons button {
+            padding: 12px 25px; border: none; border-radius: 8px; font-weight: 600;
+            cursor: pointer; transition: background-color 0.3s; background: var(--gradient-blue-purple);
+            color: var(--light-text-color); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .action-buttons button:hover:not(:disabled) { opacity: 0.9; }
+        .action-buttons button:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* Hasil Gabungan */
+        .result-section { padding: 30px 0; }
+        .result-section h2 { font-size: 1.8em; margin-bottom: 15px; color: var(--primary-color); text-align: center; }
+        
+        .combined-result-container {
+            display: flex; justify-content: center; margin: 20px auto; max-width: 100%;
+            overflow-x: auto; border: 3px solid var(--secondary-color); border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); background-color: #fff; cursor: pointer; 
+        }
+
+        #combinedCanvas { display: block; max-width: 100%; height: auto; }
+        .placeholder-text { padding: 50px; color: #aaa; font-style: italic; }
+
+        /* Gaya untuk Modal Crop */
+        #cropModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.9); z-index: 1001;
+            display: none; justify-content: center; align-items: center;
+        }
+        #cropModal > div {
+            background-color: #fff; padding: 20px; border-radius: 10px;
+            max-width: 90%; max-height: 90%; overflow-y: auto;
+        }
+        #cropImage { max-width: 100%; display: block; }
+        .crop-ratio-btn {
+            padding: 8px 15px; margin: 5px; border: 1px solid var(--primary-color);
+            background-color: #fff; color: var(--primary-color); cursor: pointer; border-radius: 5px;
+            transition: all 0.2s;
+        }
+        .crop-ratio-btn:hover { background-color: var(--primary-color); color: #fff; }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 1.7em; }
+            .upload-section h2 { font-size: 1.5em; }
+            .navbar .logo-right img { height: 40px; width: 40px; }
+            .input-group { grid-template-columns: 1fr; }
+            .control-container { flex-direction: column; }
+            .control-group { flex: 1 1 100%; }
+            .action-buttons { flex-direction: column; }
+            .action-buttons button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-form">
+            <h2>Akses Terbatas 🔒</h2>
+            <p>Masukkan Kata Sandi untuk Melanjutkan</p>
+            <div class="password-container">
+                <input type="password" id="passwordInput" placeholder="Masukkan Kata Sandi Anda" required>
+                <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+            </div>
+            <button onclick="attemptLogin()">Masuk</button>
+            <p id="loginMessage" style="color: red; margin-top: 10px;"></p>
+        </div>
+    </div>
+    
+    <div id="cropModal">
+        <div>
+            <h3 style="color: var(--primary-color); margin-bottom: 15px;">Potong (Crop) Foto</h3>
+            
+            <div style="margin-bottom: 15px; text-align: center;">
+                <button class="crop-ratio-btn" data-ratio="1/1">1:1</button>
+                <button class="crop-ratio-btn" data-ratio="2/3">2:3</button>
+                <button class="crop-ratio-btn" data-ratio="3/4">3:4</button>
+                <button class="crop-ratio-btn" data-ratio="9/16">9:16</button>
+                <button class="crop-ratio-btn" data-ratio="null">Asli</button>
+            </div>
+
+            <div id="cropContainer" style="max-width: 100%; margin: 0 auto;">
+                 <img id="cropImage">
+            </div>
+            
+            <div style="margin-top: 20px; display: flex; justify-content: space-around;">
+                <button onclick="applyCrop()" style="padding: 10px 20px; background: var(--gradient-blue-purple); color: #fff; border: none; border-radius: 5px; cursor: pointer;">Terapkan Crop</button>
+                <button onclick="closeCropModal()" style="padding: 10px 20px; background-color: #ccc; color: #333; border: none; border-radius: 5px; cursor: pointer;">Batal</button>
+            </div>
+        </div>
+    </div>
+    <header>
+        <div class="container navbar">
+            <a href="#" class="brand">Creative Batch Editor</a>
+            <div class="logo-right">
+                <img src="1000301458.png" alt="Logo Kamera Warna-warni"> 
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1>Batch Timestamp: Edit & Gabung Foto</h1>
+                <p>Unggah maksimal 8 foto untuk digabungkan menjadi satu file dengan timestamp kustom.</p>
+                <a href="#upload-section" class="btn-primary">Mulai Proses!</a>
+            </div>
+        </section>
+
+        <section id="upload-section" class="upload-section">
+            <div class="container">
+                <h2>1. Unggah Foto (Maksimal 8)</h2>
+                <div class="upload-box" id="dropArea">
+                    <i class="fas fa-cloud-upload-alt"></i> 
+                    <p>Seret & Lepas Foto di Sini atau Klik untuk Memilih (Maks. 8 Foto)</p>
+                    <input type="file" id="photoUpload" multiple accept="image/*">
+                </div>
+                <small>Jumlah Foto Terpilih: <span id="fileCount">0</span>/8</small>
+
+                <div class="timestamp-controls">
+                    <h3>2. Input Data & Pengaturan</h3>
+                    <div class="input-group">
+                        <div class="input-item"><label for="dateTimeInput">Waktu/Tanggal:</label><input type="text" id="dateTimeInput" placeholder="Senin, 06 Oktober 2025 17:48:24"></div>
+                        <div class="input-item"><label for="bearingInput">Arah Mata Angin:</label><input type="text" id="bearingInput" placeholder="298° NW" value="298° NW"></div>
+                        <div class="input-item"><label for="addressInput">Alamat Detail:</label><input type="text" id="addressInput" placeholder="Jalan Sambeng Kecamatan Kasiman" value="Jalan Sambeng Kecamatan Kasiman"></div>
+                        <div class="input-item"><label for="cityInput">Kota/Kabupaten:</label><input type="text" id="cityInput" placeholder="Kabupaten Bojonegoro Jawa Timur" value="Kabupaten Bojonegoro Jawa Timur"></div>
+                        <div class="input-item"><label for="altitudeInput">Ketinggian (msnm):</label><input type="text" id="altitudeInput" placeholder="119.3msnm" value="119.3msnm"></div>
+                        <div class="input-item"><label for="speedInput">Kecepatan (km/h):</label><input type="text" id="speedInput" placeholder="0.0km/h" value="0.0km/h"></div>
+                        <div class="input-item"><label for="latitudeInput">Latitude (Lintang):</label><input type="text" id="latitudeInput" placeholder="-7.123456" value="-7.123456"></div>
+                        <div class="input-item"><label for="longitudeInput">Longitude (Bujur):</label><input type="text" id="longitudeInput" placeholder="111.987654" value="111.987654"></div>
+                        <div class="input-item"><label for="indexInput">Nomor Indeks:</label><input type="text" id="indexInput" placeholder="383" value="383"></div>
+                    </div>
+                    
+                    <div class="control-container">
+                        <div id="timestampSizeControl" class="control-group">
+                            <label for="timestampSizeSlider">Ukuran Font Timestamp (1 - 10): <span id="currentSizeValue">5</span></label>
+                            <div class="slider-container">
+                                <button id="decreaseSize"><i class="fas fa-minus"></i></button>
+                                <input type="range" id="timestampSizeSlider" min="1" max="10" value="5" step="0.5" style="flex-grow: 1;">
+                                <button id="increaseSize"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+                        
+                        <div id="mapScaleControl" class="control-group">
+                            <div class="map-upload-row">
+                                <label for="mapUpload">
+                                    <i class="fas fa-map-marked-alt"></i> Unggah Peta Lokal:
+                                </label>
+                                <input type="file" id="mapUpload" accept="image/*">
+                            </div>
+                            <div id="mapStatus" style="font-size: 0.8em; color: #888; text-align: center; margin-bottom: 10px;">(Peta belum diunggah)</div>
+
+                            <label for="mapScaleSlider">Ukuran Peta (Skala 1 - 10): <span id="currentMapScaleValue">5</span></label>
+                            <div class="slider-container">
+                                <button id="decreaseMapSize"><i class="fas fa-minus"></i></button>
+                                <input type="range" id="mapScaleSlider" min="1" max="10" value="5" step="0.5" style="flex-grow: 1;">
+                                <button id="increaseMapSize"><i class="fas fa-plus"></i></button>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="toggleMap">
+                                <label for="toggleMap" style="margin: 0; text-align: left;">Tampilkan Peta Mini</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button onclick="processAllImages()" id="processButton" disabled>3. Proses & Gabungkan Foto</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="result-section" class="result-section">
+            <div class="container">
+                <h2>4. Hasil Gabungan (Klik untuk Crop Foto)</h2>
+                <div class="combined-result-container">
+                    <canvas id="combinedCanvas"></canvas>
+                    <p class="placeholder-text" id="canvasPlaceholder">Hasil gabungan (jika ada) akan ditampilkan di sini. Tata letak akan menggunakan Grid 2xN. Klik pada hasil gabungan untuk memotong foto secara individu.</p>
+                </div>
+                <div class="action-buttons">
+                    <button onclick="downloadCombinedImage()" id="downloadCombinedButton" disabled>Unduh Hasil Gabungan (.jpg)</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Creative Batch Editor. Hak Cipta Dilindungi.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    
+    <script>
+        // Kunci API kini tidak digunakan, tapi variabel dipertahankan untuk menghindari error
+        const GOOGLE_MAPS_API_KEY = ""; 
+
+        const photoUpload = document.getElementById('photoUpload');
+        const processButton = document.getElementById('processButton');
+        const downloadCombinedButton = document.getElementById('downloadCombinedButton');
+        const fileCountSpan = document.getElementById('fileCount');
+        const combinedCanvas = document.getElementById('combinedCanvas');
+        const canvasPlaceholder = document.getElementById('canvasPlaceholder');
+        const timestampSizeSlider = document.getElementById('timestampSizeSlider');
+        const currentSizeValue = document.getElementById('currentSizeValue');
+        const ctxCombined = combinedCanvas.getContext('2d');
+        const dropArea = document.getElementById('dropArea');
+        
+        const decreaseSizeButton = document.getElementById('decreaseSize');
+        const increaseSizeButton = document.getElementById('increaseSize');
+        const cropModal = document.getElementById('cropModal');
+        const cropImageElement = document.getElementById('cropImage');
+        const cropRatioButtons = document.querySelectorAll('.crop-ratio-btn');
+
+        // MAP ELEMENTS
+        const mapScaleSlider = document.getElementById('mapScaleSlider');
+        const currentMapScaleValue = document.getElementById('currentMapScaleValue');
+        const decreaseMapSizeButton = document.getElementById('decreaseMapSize');
+        const increaseMapSizeButton = document.getElementById('increaseMapSize');
+        const toggleMapCheckbox = document.getElementById('toggleMap');
+        const mapUpload = document.getElementById('mapUpload');
+        const mapStatus = document.getElementById('mapStatus');
+        
+        let uploadedFiles = []; 
+        let currentCropper = null; 
+        let imageToCropIndex = -1; 
+        let processedCanvases = []; 
+        let baseCleanCanvases = []; 
+        let localMapImage = null; // Variabel untuk menyimpan objek gambar peta lokal
+        
+        // --- FUNGSI LOGIN SISI KLIEN ---
+        const CORRECT_PASSWORD = "123"; 
+
+        function attemptLogin() {
+            const inputPassword = document.getElementById('passwordInput').value;
+            const loginOverlay = document.getElementById('login-overlay');
+            const loginMessage = document.getElementById('loginMessage');
+            
+            if (inputPassword === CORRECT_PASSWORD) {
+                loginOverlay.style.display = 'none'; 
+                alert("Login Berhasil!");
+            } else {
+                loginMessage.textContent = "Kata sandi salah. Silakan coba lagi.";
+                document.getElementById('passwordInput').value = ''; 
+            }
+        }
+
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('passwordInput');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+        // --- AKHIR FUNGSI LOGIN ---
+
+        // --- FUNGSI KONTROL UKURAN FONT & PETA ---
+        
+        // Font Size Controls (Sudah benar)
+        decreaseSizeButton.addEventListener('click', () => {
+            let currentValue = parseFloat(timestampSizeSlider.value);
+            if (currentValue > parseFloat(timestampSizeSlider.min)) {
+                timestampSizeSlider.value = currentValue - 0.5;
+                currentSizeValue.textContent = timestampSizeSlider.value;
+                if (uploadedFiles.length > 0 && processedCanvases.length > 0) processAllImages();
+            }
+        });
+
+        increaseSizeButton.addEventListener('click', () => {
+            let currentValue = parseFloat(timestampSizeSlider.value);
+            if (currentValue < parseFloat(timestampSizeSlider.max)) {
+                timestampSizeSlider.value = currentValue + 0.5;
+                currentSizeValue.textContent = timestampSizeSlider.value;
+                if (uploadedFiles.length > 0 && processedCanvases.length > 0) processAllImages();
+            }
+        });
+        timestampSizeSlider.addEventListener('input', () => {
+            currentSizeValue.textContent = timestampSizeSlider.value;
+        });
+        
+        // Map Size Controls (Tombol dan logic sudah ada, ditambahkan pemanggilan processAllImages)
+        decreaseMapSizeButton.addEventListener('click', () => {
+            let currentValue = parseFloat(mapScaleSlider.value);
+            if (currentValue > parseFloat(mapScaleSlider.min)) {
+                mapScaleSlider.value = currentValue - 0.5;
+                currentMapScaleValue.textContent = mapScaleSlider.value;
+                if (uploadedFiles.length > 0 && processedCanvases.length > 0 && toggleMapCheckbox.checked) processAllImages();
+            }
+        });
+
+        increaseMapSizeButton.addEventListener('click', () => {
+            let currentValue = parseFloat(mapScaleSlider.value);
+            if (currentValue < parseFloat(mapScaleSlider.max)) {
+                mapScaleSlider.value = currentValue + 0.5;
+                currentMapScaleValue.textContent = mapScaleSlider.value;
+                if (uploadedFiles.length > 0 && processedCanvases.length > 0 && toggleMapCheckbox.checked) processAllImages();
+            }
+        });
+        mapScaleSlider.addEventListener('input', () => {
+            currentMapScaleValue.textContent = mapScaleSlider.value;
+            if (uploadedFiles.length > 0 && processedCanvases.length > 0 && toggleMapCheckbox.checked) processAllImages();
+        });
+        
+        // Map Toggle Handler
+        toggleMapCheckbox.addEventListener('change', () => {
+            if (toggleMapCheckbox.checked && localMapImage === null) {
+                alert("Silakan unggah gambar peta statis lokal terlebih dahulu.");
+                toggleMapCheckbox.checked = false;
+                return;
+            }
+            if (uploadedFiles.length > 0 && processedCanvases.length > 0) {
+                processAllImages();
+            }
+        });
+
+        // Handler untuk Upload Peta Lokal
+        mapUpload.addEventListener('change', handleMapUpload);
+
+        function handleMapUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !file.type.startsWith('image/')) {
+                localMapImage = null;
+                mapStatus.textContent = "(Peta belum diunggah)";
+                mapStatus.style.color = "#888";
+                toggleMapCheckbox.checked = false;
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    localMapImage = img;
+                    mapStatus.textContent = `(Peta dimuat: ${file.name})`;
+                    mapStatus.style.color = "green";
+                    toggleMapCheckbox.checked = true; // Auto-check if map is loaded
+                    if (uploadedFiles.length > 0) {
+                         processAllImages(); // Re-process to apply the map
+                    }
+                };
+                img.onerror = () => {
+                    localMapImage = null;
+                    mapStatus.textContent = "(Gagal memuat peta)";
+                    mapStatus.style.color = "red";
+                    toggleMapCheckbox.checked = false;
+                }
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- AKHIR KONTROL UKURAN & PETA LOKAL ---
+
+        // Event listener untuk klik atau memilih file
+        photoUpload.addEventListener('change', handleFiles);
+        
+        // --- FUNGSI CROP HANDLER ---
+        combinedCanvas.addEventListener('click', handleCombinedCanvasClick);
+        
+        function handleCombinedCanvasClick(e) {
+            if (uploadedFiles.length === 0 || processedCanvases.length === 0) return;
+
+            const rect = combinedCanvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            const numImages = processedCanvases.length;
+            const cols = (numImages === 1) ? 1 : 2;
+            const rows = Math.ceil(numImages / cols);
+            
+            const cellDisplayWidth = rect.width / cols;
+            const cellDisplayHeight = rect.height / rows;
+
+            const colClicked = Math.floor(clickX / cellDisplayWidth);
+            const rowClicked = Math.floor(clickY / cellDisplayHeight);
+            imageToCropIndex = (rowClicked * cols) + colClicked;
+
+            if (imageToCropIndex >= 0 && imageToCropIndex < numImages) {
+                openCropModal(baseCleanCanvases[imageToCropIndex]);
+            }
+        }
+        
+        function openCropModal(canvas) {
+            cropImageElement.src = canvas.toDataURL();
+            cropModal.style.display = 'flex';
+            
+            cropImageElement.onload = () => {
+                if (currentCropper) {
+                    currentCropper.destroy();
+                }
+                
+                currentCropper = new Cropper(cropImageElement, {
+                    aspectRatio: null, 
+                    viewMode: 1,
+                });
+            };
+        }
+        
+        function closeCropModal() {
+            cropModal.style.display = 'none';
+            if (currentCropper) {
+                currentCropper.destroy();
+                currentCropper = null;
+            }
+            imageToCropIndex = -1;
+        }
+        
+        cropRatioButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const ratio = this.getAttribute('data-ratio');
+                const aspectRatio = (ratio === 'null') ? null : eval(ratio); 
+                if (currentCropper) {
+                    currentCropper.setAspectRatio(aspectRatio);
+                }
+            });
+        });
+        
+        function applyCrop() {
+            if (currentCropper && imageToCropIndex !== -1) {
+                const croppedCanvas = currentCropper.getCroppedCanvas();
+                
+                baseCleanCanvases[imageToCropIndex] = croppedCanvas;
+                
+                const data = getCurrentInputData();
+                const textLines = [data.dateTime, data.bearing, data.address, data.city, data.altitude, data.speed, data.index];
+                const sizeScale = parseFloat(timestampSizeSlider.value); 
+                const mapScale = parseFloat(mapScaleSlider.value); 
+                const shouldDrawMap = toggleMapCheckbox.checked && localMapImage !== null;
+
+                const tempImg = new Image();
+                tempImg.onload = async () => {
+                    const mapImg = shouldDrawMap ? localMapImage : null;
+                    
+                    const croppedCanvasWithStamp = await addTimestampToImage(tempImg, textLines, sizeScale, mapImg, mapScale, true); 
+                    
+                    processedCanvases[imageToCropIndex] = croppedCanvasWithStamp;
+                    
+                    recombineImages(processedCanvases); 
+                    closeCropModal();
+                };
+                tempImg.src = croppedCanvas.toDataURL('image/png'); 
+            }
+        }
+        // --- AKHIR FUNGSI CROP HANDLER ---
+
+        // Event listener untuk drag and drop files
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'), false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'), false);
+        });
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function preventDefaults (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles({ target: { files: files } });
+        }
+
+
+        function handleFiles(event) {
+            const files = Array.from(event.target.files).filter(file => file.type.startsWith('image/'));
+            
+            uploadedFiles = files.slice(0, 8); 
+            
+            fileCountSpan.textContent = uploadedFiles.length;
+            processButton.disabled = uploadedFiles.length === 0;
+            downloadCombinedButton.disabled = true;
+            canvasPlaceholder.style.display = 'block';
+            combinedCanvas.style.display = 'none';
+            processedCanvases = []; 
+            baseCleanCanvases = []; 
+        }
+        
+        // --- FUNGSI HELPER ---
+        function copySourceToCanvas(source) {
+            return new Promise(resolve => {
+                const tempCanvas = document.createElement('canvas');
+                const ctx = tempCanvas.getContext('2d');
+                tempCanvas.width = source.width;
+                tempCanvas.height = source.height;
+                ctx.drawImage(source, 0, 0);
+                resolve(tempCanvas);
+            });
+        }
+        
+        function getCurrentInputData() {
+            return {
+                dateTime: document.getElementById('dateTimeInput').value,
+                bearing: document.getElementById('bearingInput').value,
+                address: document.getElementById('addressInput').value,
+                city: document.getElementById('cityInput').value,
+                altitude: 'Altitude:' + document.getElementById('altitudeInput').value,
+                speed: 'Speed:' + document.getElementById('speedInput').value,
+                index: 'Index number:' + document.getElementById('indexInput').value,
+                latitude: document.getElementById('latitudeInput').value,
+                longitude: document.getElementById('longitudeInput').value
+            };
+        }
+        // --- AKHIR FUNGSI HELPER ---
+
+        // --- FUNGSI processAllImages UTAMA ---
+        async function processAllImages() {
+            if (uploadedFiles.length === 0) {
+                alert("Silakan unggah minimal satu foto!");
+                return;
+            }
+
+            processButton.disabled = true;
+            processButton.textContent = 'Memproses & Menggabungkan...';
+            canvasPlaceholder.style.display = 'none';
+
+            const data = getCurrentInputData();
+            const textLines = [data.dateTime, data.bearing, data.address, data.city, data.altitude, data.speed, data.index];
+            const sizeScale = parseFloat(timestampSizeSlider.value); 
+            const mapScale = parseFloat(mapScaleSlider.value); 
+            
+            const shouldDrawMap = toggleMapCheckbox.checked && localMapImage !== null;
+            const mapImg = shouldDrawMap ? localMapImage : null;
+            
+            const isInitialProcess = processedCanvases.length === 0;
+
+            if (isInitialProcess) {
+                processedCanvases = [];
+                baseCleanCanvases = [];
+                for (const file of uploadedFiles) {
+                    const imgObj = await readFileAsImageObject(file);
+                    
+                    const cleanCanvas = await copySourceToCanvas(imgObj);
+                    baseCleanCanvases.push(cleanCanvas);
+
+                    const processedCanvas = await addTimestampToImage(cleanCanvas, textLines, sizeScale, mapImg, mapScale, true); 
+                    processedCanvases.push(processedCanvas);
+                }
+            } else {
+                let newProcessedCanvases = [];
+                for (const baseCanvas of baseCleanCanvases) {
+                    const reStampedCanvas = await addTimestampToImage(baseCanvas, textLines, sizeScale, mapImg, mapScale, true);
+                    newProcessedCanvases.push(reStampedCanvas);
+                }
+                processedCanvases = newProcessedCanvases;
+            }
+            
+            recombineImages(processedCanvases); 
+            
+            processButton.textContent = 'Proses Selesai!';
+            processButton.disabled = false;
+            downloadCombinedButton.disabled = false;
+        }
+        // --- AKHIR FUNGSI processAllImages UTAMA ---
+
+        // --- FUNGSI addTimestampToImage (Menggambar Timestamp & Peta) ---
+        function addTimestampToImage(imgOrCanvas, textLines, sizeScale, mapImg, mapScale, isStamping = false) {
+            return new Promise(async (resolve) => {
+                let source = imgOrCanvas;
+                if (typeof imgOrCanvas === 'string') {
+                     source = await new Promise(res => {
+                        const img = new Image();
+                        img.onload = () => res(img);
+                        img.src = imgOrCanvas;
+                    });
+                }
+                
+                const tempCanvas = document.createElement('canvas');
+                const ctx = tempCanvas.getContext('2d');
+
+                tempCanvas.width = source.width;
+                tempCanvas.height = source.height;
+                // Pastikan kanvas digambar ulang dari sumber bersih
+                ctx.drawImage(source, 0, 0); 
+
+                if (isStamping) { 
+                    const baseDimension = (tempCanvas.width + tempCanvas.height) / 2;
+                    const margin = Math.floor(baseDimension * 0.02); 
+                    
+                    // 1. GAMBAR PETA (POJOK KIRI BAWAH) - Posisi diperbarui
+                    if (mapImg) {
+                        const mapBaseSize = tempCanvas.width / 5; 
+                        const mapWidth = mapBaseSize * (mapScale / 5);
+                        const mapHeight = mapBaseSize * (mapScale / 5);
+                        
+                        // Menghitung koordinat Y untuk pojok kiri bawah
+                        const mapX = margin;
+                        const mapY = tempCanvas.height - mapHeight - margin; 
+                        
+                        // Gambar Peta
+                        ctx.drawImage(mapImg, mapX, mapY, mapWidth, mapHeight); 
+
+                        // Gambar Border
+                        ctx.strokeStyle = '#FFFFFF';
+                        ctx.lineWidth = margin / 5;
+                        ctx.strokeRect(mapX, mapY, mapWidth, mapHeight);
+                    }
+
+                    // 2. GAMBAR TIMESTAMP (POJOK KANAN BAWAH) - Tetap
+                    const dynamicFontSize = Math.floor(baseDimension / 30) * (sizeScale / 5); 
+                    const lineHeight = dynamicFontSize * 1.5; 
+                    const x = tempCanvas.width - margin; 
+                    let y = tempCanvas.height - (textLines.length * lineHeight) - margin; 
+
+                    // Jika peta digambar di kiri bawah, pastikan timestamp tidak bertabrakan
+                    if (mapImg) {
+                         const mapBaseSize = tempCanvas.width / 5; 
+                         const mapWidth = mapBaseSize * (mapScale / 5);
+                         // Jika area peta terlalu lebar/tinggi, mungkin perlu penyesuaian posisi y, 
+                         // namun untuk margin 2% dan skala normal, tabrakan tidak terjadi di pojok berlawanan.
+                         // Posisi timestamp tetap di pojok kanan bawah, sehingga aman.
+                    }
+
+                    ctx.font = `bold ${dynamicFontSize}px Arial`;
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.textAlign = 'right'; 
+                    ctx.textBaseline = 'top';
+
+                    textLines.forEach((line) => {
+                        ctx.strokeStyle = '#000000'; 
+                        ctx.lineWidth = dynamicFontSize / 15; 
+                        ctx.strokeText(line, x, y);
+                        
+                        ctx.fillText(line, x, y);
+                        
+                        y += lineHeight; 
+                    });
+                }
+                
+                resolve(tempCanvas); 
+            });
+        }
+        // --- AKHIR FUNGSI addTimestampToImage ---
+
+        // --- UTILITY LAINNYA ---
+        function recombineImages(canvases) {
+            const numImages = canvases.length;
+            let cols = (numImages === 1) ? 1 : 2; 
+            let rows = Math.ceil(numImages / cols);
+
+            let maxImageWidth = 0;
+            let maxImageHeight = 0;
+            
+            canvases.forEach(canvas => {
+                if (canvas.width > maxImageWidth) maxImageWidth = canvas.width;
+                if (canvas.height > maxImageHeight) maxImageHeight = canvas.height;
+            });
+            
+            const cellWidth = maxImageWidth;
+            const cellHeight = maxImageHeight;
+
+            combinedCanvas.width = cellWidth * cols;
+            combinedCanvas.height = cellHeight * rows;
+            ctxCombined.clearRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+            
+            for (let i = 0; i < numImages; i++) {
+                const canvas = canvases[i];
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                
+                const x = col * cellWidth;
+                const y = row * cellHeight;
+                
+                ctxCombined.drawImage(canvas, x, y, cellWidth, cellHeight);
+            }
+            
+            combinedCanvas.style.display = 'block';
+        }
+
+        function readFileAsImageObject(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        function downloadCombinedImage() {
+            if (combinedCanvas.width === 0 || combinedCanvas.height === 0) {
+                alert("Tidak ada gambar gabungan untuk diunduh!");
+                return;
+            }
+            
+            const imageURL = combinedCanvas.toDataURL('image/jpeg', 0.9);
+
+            const a = document.createElement('a');
+            a.href = imageURL;
+            a.download = `foto_gabungan_edited_${new Date().getTime()}.jpg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function setInitialDateTime() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            const formattedDate = now.toLocaleDateString('id-ID', options).replace(/, /g, ', ').replace(/ /g, ' ').replace(/-/g, ':');
+            document.getElementById('dateTimeInput').value = formattedDate.replace('pukul', '').trim();
+        }
+        setInitialDateTime();
+    </script>
+
+</body>
+</html>
