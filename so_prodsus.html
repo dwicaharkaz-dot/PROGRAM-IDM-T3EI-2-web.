@@ -47,7 +47,7 @@
 
   <div class="container">
     <h2 class="section-title">Input Data Stok Sistem</h2>
-    <textarea id="dataInput" placeholder="Format: plu,nama,harga,stok"></textarea>
+    <textarea id="dataInput" placeholder="Format: plu,nama barang,harga,stok"></textarea>
     <div class="controls-row">
       <button class="small btn-yellow" onclick="addData()">Tambah Stok</button>
       <button class="small btn-yellow" onclick="fillExample()">Isi Contoh 5 Barang</button>
@@ -114,19 +114,21 @@
     function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
     function fillExample(){
+      // Diubah untuk mencerminkan format: plu,nama barang,harga,stok
       document.getElementById('dataInput').value = [
         "1001,Indomie Goreng,3500,100",
         "1002,Aqua 600ml,5000,50",
         "1003,Susu UHT,8000,30",
         "1004,Gula Pasir,12000,20",
         "1005,Teh Celup,2000,40"
-      ].join('\\n');
+      ].join('\n');
     }
 
     function addData(){
-      const lines=document.getElementById('dataInput').value.trim().split('\\n').filter(l=>l);
+      const lines=document.getElementById('dataInput').value.trim().split('\n').filter(l=>l);
       lines.forEach(line=>{
         const d=line.split(',').map(x=>x.trim());
+        // Logika pengolahan data sudah sesuai: d[0]=plu, d[1]=nama, d[2]=harga, d[3]=stokSistem
         if(d.length===4){
           allItems.push({plu:d[0],nama:d[1],harga:toNumber(d[2]),stokSistem:toNumber(d[3]),stokFisik:0});
         }
