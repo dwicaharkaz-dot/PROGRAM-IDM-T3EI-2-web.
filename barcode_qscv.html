@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BARCODE ESS T3EI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- STYLING HEADER BARU --- */
+        header {
+            /* Warna Biru Tunggal */
+            background-color: #007bff; 
+            color: white;
+            padding: 10px 20px; /* Padding diperkecil */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.8em; /* Ukuran font diperkecil */
+            color: white;
+            font-family: 'Oswald', sans-serif; /* Font Oswald (ganti jika punya font Days) */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+            flex-grow: 1; 
+            text-align: left; 
+            padding-left: 0; 
+            white-space: nowrap; /* Memastikan font tetap satu baris */
+        }
+        
+        /* Garis Pemisah (Menggunakan elemen hr yang diletakkan di bawah header secara visual) */
+        .header-separator {
+            border: 0;
+            height: 3px;
+            background-image: linear-gradient(to right, #007bff, #17a2b8, #007bff); /* Garis gradien Biru-Cyan-Biru */
+            margin: 0 0 20px 0; /* Jarak antara garis dan konten utama */
+        }
+
+        .logo-indomaret {
+            height: 35px; /* Ukuran logo disesuaikan */
+            margin-right: 5px; 
+            background-color: white; 
+            padding: 3px 8px; 
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* --- STYLING UTAMA --- */
+        main {
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto; /* Menghapus margin atas karena separator sudah ada */
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h2, h3 {
+            color: #007bff;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Styling Daftar Karyawan */
+        .employee-item {
+            display: block; 
+            padding: 12px 20px;
+            margin-bottom: 8px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold; 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); 
+        }
+
+        .employee-item:hover {
+            background-color: #e9ecef;
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Styling Form dan Button */
+        #add-employee-form, #edit-employee-form {
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 15px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+        }
+        
+        button.copy-btn {
+            background-color: #28a745;
+            padding: 5px 10px;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        button.copy-btn:hover {
+            background-color: #1e7e34;
+        }
+
+
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        #delete-employee-btn {
+            background-color: #dc3545;
+        }
+        #delete-employee-btn:hover {
+            background-color: #bd2130;
+        }
+
+        /* Modal Styling */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 10;
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.4); 
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%; 
+            max-width: 500px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .close-btn:hover,
+        .close-btn:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        #barcode-display {
+            text-align: center;
+            padding: 15px;
+            border: 1px dashed #007bff;
+            margin-bottom: 15px;
+        }
+        
+        .barcode-section {
+            margin-bottom: 20px;
+        }
+
+        .barcode-note {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        /* Barcode (QR Code) container styling */
+        #qrcode-nik, #qrcode-password {
+            display: inline-block;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background: white;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>BARCODE ESS T3EI</h1>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/9/9d/Logo_Indomaret.png" alt="Logo Indomaret" class="logo-indomaret">
+    </header>
+    
+    <hr class="header-separator">
+
+    <main>
+        <section id="employee-list-section">
+            <h2>Daftar Karyawan 🧑‍💼</h2>
+            <div id="employee-list-container">
+                </div>
+        </section>
+
+        <hr>
+
+        <section id="add-employee-section">
+            <button id="show-add-form-btn">Tambah Daftar Karyawan ➕</button>
+            <div id="add-employee-form" style="display:none;">
+                <h3>Formulir Tambah Karyawan</h3>
+                <form id="new-employee-form">
+                    <label for="new-nama">Nama:</label>
+                    <input type="text" id="new-nama" required><br>
+
+                    <label for="new-nik">NIK:</label>
+                    <input type="text" id="new-nik" required><br>
+
+                    <label for="new-password">Password:</label>
+                    <input type="password" id="new-password" required><br>
+
+                    <button type="submit">Simpan Karyawan Baru</button>
+                </form>
+            </div>
+        </section>
+
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <h3 id="modal-title">Detail Barcode & Edit</h3>
+
+                <div id="barcode-display">
+                    
+                    <div class="barcode-section">
+                        <h4>Barcode NIK:</h4>
+                        <div id="qrcode-nik"></div>
+                        <p class="barcode-note">Data NIK: <strong id="data-nik"></strong></p>
+                        <button class="copy-btn" onclick="copyToClipboard('data-nik')">Salin NIK</button>
+                    </div>
+
+                    <div class="barcode-section">
+                        <h4>Barcode Password:</h4>
+                        <div id="qrcode-password"></div>
+                        <p class="barcode-note">Data Password: <strong id="data-password"></strong></p>
+                        <button class="copy-btn" onclick="copyToClipboard('data-password')">Salin Password</button>
+                    </div>
+                </div>
+
+                <hr>
+
+                <h4>Edit Data Karyawan</h4>
+                <form id="edit-employee-form">
+                    <input type="hidden" id="edit-index">
+                    <label for="edit-nama">Nama:</label>
+                    <input type="text" id="edit-nama" required><br>
+
+                    <label for="edit-nik">NIK:</label>
+                    <input type="text" id="edit-nik" required><br>
+
+                    <label for="edit-password">Password:</label>
+                    <input type="text" id="edit-password" required><br>
+
+                    <button type="submit">Simpan Perubahan</button>
+                    <button type="button" id="delete-employee-btn">Hapus Karyawan</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Data Karyawan Awal
+        let employees = [
+            { nama: "P.Risky", nik: "2015046856", password: "Ekeng12345" },
+            { nama: "Vicky", nik: "2015664852", password: "Vicki123" },
+            { nama: "Dwi", nik: "2015514964", password: "Dwipranoto2" },
+            { nama: "Maura", nik: "2015412239", password: "Maura123" },
+            { nama: "B.Tri", nik: "2013202915", password: "Trianasetia123" },
+            { nama: "Putri", nik: "2015380808", password: "Nap231203" },
+            { nama: "Arya", nik: "2015608197", password: "Arya1234567" },
+            { nama: "Ipin", nik: "2015500732", password: "Angkasa22" },
+            { nama: "B.ema", nik: "2015355437", password: "Ema11223" },
+            { nama: "Yoga", nik: "2015502008", password: "Yoga123123" },
+        ];
+
+        const listContainer = document.getElementById('employee-list-container');
+        const modal = document.getElementById('modal');
+        const closeModal = document.querySelector('.close-btn');
+        const showAddFormBtn = document.getElementById('show-add-form-btn');
+        const addFormDiv = document.getElementById('add-employee-form');
+        const newEmployeeForm = document.getElementById('new-employee-form');
+        const editEmployeeForm = document.getElementById('edit-employee-form');
+        const deleteEmployeeBtn = document.getElementById('delete-employee-btn');
+
+        // Fungsi utilitas untuk menyalin teks
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const textToCopy = element.textContent;
+
+            // Menggunakan Clipboard API modern
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert(`Berhasil menyalin: ${textToCopy}`);
+            }).catch(err => {
+                // Fallback untuk browser lama
+                const tempInput = document.createElement('textarea');
+                tempInput.value = textToCopy;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                alert(`Berhasil menyalin: ${textToCopy}`);
+            });
+        }
+        
+        // Agar fungsi copyToClipboard bisa dipanggil dari HTML (onclick)
+        window.copyToClipboard = copyToClipboard; 
+
+
+        // Fungsi untuk merender (menampilkan) daftar karyawan
+        function renderEmployeeList() {
+            listContainer.innerHTML = ''; 
+
+            employees.forEach((employee, index) => {
+                const item = document.createElement('div');
+                item.className = 'employee-item';
+                item.setAttribute('data-index', index);
+                // Menampilkan nomor urut dan nama
+                item.innerHTML = `<span>${index + 1}. ${employee.nama}</span>`; 
+                
+                item.addEventListener('click', () => showBarcodeModal(index));
+                
+                listContainer.appendChild(item);
+            });
+        }
+
+        // Fungsi untuk menampilkan modal Barcode dan Edit
+        function showBarcodeModal(index) {
+            const employee = employees[index];
+
+            // 1. Tampilkan Barcode
+            // Kosongkan dulu container barcode (PENTING sebelum membuat QR Code baru)
+            document.getElementById('qrcode-nik').innerHTML = '';
+            document.getElementById('qrcode-password').innerHTML = '';
+            
+            // Inisialisasi QR Code untuk NIK
+            new QRCode(document.getElementById('qrcode-nik'), {
+                text: employee.nik,
+                width: 128,
+                height: 128,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // Inisialisasi QR Code untuk Password
+            new QRCode(document.getElementById('qrcode-password'), {
+                text: employee.password,
+                width: 128,
+                height: 128,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // Tampilkan data di bawah barcode
+            document.getElementById('data-nik').textContent = employee.nik;
+            document.getElementById('data-password').textContent = employee.password;
+            document.getElementById('modal-title').textContent = `Barcode & Edit (${employee.nama})`;
+
+
+            // 2. Isi Formulir Edit
+            document.getElementById('edit-index').value = index;
+            document.getElementById('edit-nama').value = employee.nama;
+            document.getElementById('edit-nik').value = employee.nik;
+            document.getElementById('edit-password').value = employee.password;
+
+            modal.style.display = 'block';
+        }
+
+        // Event Listener untuk tombol tutup modal
+        closeModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        // Event Listener untuk klik di luar modal
+        window.addEventListener('click', (event) => {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Event Listener untuk tombol "Tambah Daftar Karyawan"
+        showAddFormBtn.addEventListener('click', () => {
+            // Toggle (tampilkan/sembunyikan) form
+            const isHidden = addFormDiv.style.display === 'none' || addFormDiv.style.display === '';
+            addFormDiv.style.display = isHidden ? 'block' : 'none';
+            showAddFormBtn.textContent = isHidden ? 'Sembunyikan Formulir' : 'Tambah Daftar Karyawan ➕';
+        });
+        
+        // Event Listener untuk Simpan Karyawan Baru
+        newEmployeeForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            
+            const newEmployee = {
+                nama: document.getElementById('new-nama').value,
+                nik: document.getElementById('new-nik').value,
+                password: document.getElementById('new-password').value
+            };
+            
+            employees.push(newEmployee);
+            newEmployeeForm.reset();
+            renderEmployeeList();
+            
+            // Sembunyikan form setelah berhasil
+            addFormDiv.style.display = 'none';
+            showAddFormBtn.textContent = 'Tambah Daftar Karyawan ➕';
+            alert(`Karyawan ${newEmployee.nama} berhasil ditambahkan!`);
+        });
+
+        // Event Listener untuk Simpan Perubahan Edit
+        editEmployeeForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            
+            const index = document.getElementById('edit-index').value;
+            
+            employees[index] = {
+                nama: document.getElementById('edit-nama').value,
+                nik: document.getElementById('edit-nik').value,
+                password: document.getElementById('edit-password').value
+            };
+            
+            renderEmployeeList();
+            modal.style.display = 'none';
+            alert(`Data karyawan ${employees[index].nama} berhasil diubah!`);
+        });
+        
+        // Event Listener untuk Hapus Karyawan
+        deleteEmployeeBtn.addEventListener('click', () => {
+            const index = document.getElementById('edit-index').value;
+            const nama = employees[index].nama;
+            
+            if (confirm(`Apakah Anda yakin ingin menghapus karyawan ${nama}?`)) {
+                employees.splice(index, 1); // Hapus 1 elemen pada index tersebut
+                renderEmployeeList();
+                modal.style.display = 'none';
+                alert(`Karyawan ${nama} berhasil dihapus.`);
+            }
+        });
+
+        // Panggil fungsi render saat halaman pertama kali dimuat
+        renderEmployeeList();
+    </script>
+
+</body>
+</html>
