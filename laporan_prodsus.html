@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Produk Khusus T3EI</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header-top { 
+            display:flex; justify-content:space-between; align-items:center;
+            padding:10px 20px; background:white; box-shadow:0 2px 5px rgba(0,0,0,0.1);
+        }
+        .header-top img { height:40px; }
+        .header-bg { 
+            display:flex; height:8px; width: 100%; 
+            position: absolute; top: 0; left: 0;
+        }
+        .color-red{flex:1;background:#dc1e28}.color-blue{flex:1;background:#0056b3}.color-yellow{flex:1;background:#ffd700}
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-top: 15px;
+        }
+        .header h1 {
+            color: #333;
+            margin: 0;
+            font-size: 1.8em;
+            padding-top: 50px;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: #fff;
+            padding: 30px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        hr {
+            border: 0;
+            height: 1px;
+            background-color: #ccc;
+            margin: 20px 0;
+        }
+        .input-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #eee;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .input-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #444;
+            font-size: 0.9em;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 0.9em;
+            box-sizing: border-box;
+        }
+        .note {
+            font-size: 0.7em;
+            color: #888;
+            margin-top: 3px;
+        }
+        .output-box {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 8px;
+            position: relative;
+        }
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .output-box h2 {
+            margin: 0;
+            color: #0056b3;
+            font-size: 1.2em;
+        }
+        .output-text {
+            white-space: pre-wrap;
+            line-height: 1.6;
+            font-size: 0.9em;
+            color: #333;
+            padding-top: 10px; /* Jarak dari header */
+        }
+        .copy-button {
+            padding: 8px 12px;
+            background-color: #008c45;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background-color 0.3s ease;
+        }
+        .copy-button:hover {
+            background-color: #006b35;
+        }
+        .nav-button {
+            background-color: #f1c40f; 
+            color: #333;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .save-button {
+            width: 100%;
+            padding: 12px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-top: 15px;
+            transition: background-color 0.3s ease;
+        }
+        .save-button:hover {
+            background-color: #c0392b;
+        }
+
+        /* New Action Buttons */
+        .action-button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .action-button {
+            padding: 12px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            width: 48%;
+            transition: background-color 0.3s ease;
+        }
+        .action-button.reset {
+            background-color: #9b59b6;
+        }
+        .action-button.reset:hover {
+            background-color: #8e44ad;
+        }
+        .action-button.restore {
+            background-color: #f39c12;
+        }
+        .action-button.restore:hover {
+            background-color: #e67e22;
+        }
+
+
+        /* Edit Mode Styles */
+        .report-line {
+            display: block;
+        }
+        .report-line.editable:hover {
+            background-color: #fff3b0;
+            cursor: pointer;
+        }
+        .edit-toggle-button {
+            display: block;
+            margin: 10px auto;
+            padding: 8px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        
+        /* Modal (Popup) */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 100; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.4); 
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; 
+            max-width: 400px;
+            border-radius: 10px;
+            position: relative;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .modal-input-group {
+            margin-bottom: 15px;
+        }
+        .modal-input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .modal-input-group input {
+            width: 95%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-bg">
+        <div class="color-red"></div>
+        <div class="color-blue"></div>
+        <div class="color-yellow"></div>
+    </div>
+    
+    <div class="header">
+        <div class="header-top">
+            <button class="nav-button" onclick="window.location.href='index.html'">← Kembali</button>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/9/9d/Logo_Indomaret.png" alt="Indomaret Logo">
+            <div></div>
+        </div>
+        <h1>LAPORAN PRODUK KHUSUS T3EI</h1>
+    </div>
+
+    <hr>
+    
+    <h2>Data Input Harian</h2>
+
+    <div class="input-section" id="all-inputs-container">
+        </div>
+
+    <button class="save-button" onclick="recordAndReset()">Simpan & Rekam Data Harian ke Cloud 💾</button>
+    
+    <div class="action-button-group">
+        <button class="action-button restore" onclick="restoreLastBackup()">Pulihkan Data Terakhir ↩️</button>
+        <button class="action-button reset" onclick="resetAllData()">Reset Data Bulanan (Mulai Bulan Baru) 🔄</button>
+    </div>
+
+    <hr>
+
+    <div class="output-box">
+        <div class="output-header">
+            <h2>Hasil Laporan Produk Khusus</h2>
+            <button class="copy-button" onclick="copyToClipboard()">Copy Laporan</button>
+        </div>
+        <button class="edit-toggle-button" id="edit-toggle-button" onclick="toggleEditMode()">Aktifkan Mode Edit Laporan</button>
+        <pre class="output-text" id="report-output"></pre>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h3>Edit Data Laporan (<span id="modal-date-info"></span>)</h3>
+    <p id="modal-info-text"></p>
+    
+    <button class="save-button" style="background-color: #2ecc71; margin-bottom: 15px;" onclick="promptAddRecord()">Tambah Data Tanggal Baru</button>
+
+    <p id="modal-warning-text" style="color:red; font-size:0.8em;">* Koreksi nilai AKM akan memengaruhi perhitungan SPD.</p>
+    
+    <div class="modal-input-group">
+        <label for="modal-sales">Sales Harian:</label>
+        <input type="text" id="modal-sales" class="modal-rupiah-input" oninput="formatRupiahModal(this)">
+    </div>
+    <div class="modal-input-group">
+        <label for="modal-akm">AKM (Akumulasi):</label>
+        <input type="text" id="modal-akm" class="modal-rupiah-input" oninput="formatRupiahModal(this)">
+    </div>
+    <div class="modal-input-group">
+        <label for="modal-spd">SPD (Sales Per Hari):</label>
+        <input type="text" id="modal-spd" class="modal-rupiah-input" disabled style="background:#eee;">
+    </div>
+
+    <div style="display:flex; justify-content:space-between; margin-top:20px;">
+        <button class="save-button" style="background-color: #2ecc71; width: 48%;" onclick="applyEdit()">Simpan Perubahan</button>
+        <button class="save-button" style="background-color: #e74c3c; width: 48%;" onclick="deleteRecord()">Hapus Tanggal Ini</button>
+    </div>
+  </div>
+</div>
+
+<script>
+    // ===================================================================================
+    // ☁️ FIREBASE CLOUD CONFIGURATION & INIT ☁️
+    // ===================================================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyDlaMjPJDQPQMZMTPSLDOuI_j47kKJEJmSWK", 
+        authDomain: "barcode-qscv.firebaseapp.com",
+        databaseURL: "https://barcode-qscv-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "barcode-qscv",
+        storageBucket: "barcode-qscv.appspot.com",
+        messagingSenderId: "204134538515",
+        appId: "1:204134538515:web:394a3880ced41726950eeb"
+    };
+
+    let database;
+    let laporanProdsusRef;
+    const CLOUD_NODE = 'laporan_prodsus/data';
+    const BACKUP_NODE = 'laporan_prodsus/backup/last_monthlyState'; // Node baru untuk backup
+
+    try {
+        firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+        laporanProdsusRef = database.ref(CLOUD_NODE); 
+    } catch (e) {
+        console.error("FIREBASE ERROR: Gagal menginisialisasi Firebase.", e);
+    }
+    // ===================================================================================
+
+    const PRODUCTS = [
+        { key: 'mr_bread', name: 'MR. BREAD 🍞', isDailyInput: false, isRupiah: true },
+        { key: 'say_bread', name: 'SAY BREAD 🥐🥨🥖', isDailyInput: true, isRupiah: false }, 
+        { key: 'fried_chicken', name: 'FRIED CHICKEN 🍗🍗', isDailyInput: false, isRupiah: false },
+        { key: 'mister_donuts', name: 'MISTER DONUTS 🍩🍩', isDailyInput: false, isRupiah: false },
+        { key: 'buah_lokal', name: 'BUAH LOKAL 🍉🍌🥭', isDailyInput: false, isRupiah: true },
+        { key: 'buah_import', name: 'BUAH IMPORT 🍏🍐', isDailyInput: false, isRupiah: true },
+        { key: 'onigiri', name: 'ONIGIRI 🍙🍙', isDailyInput: false, isRupiah: false },
+        { key: 'telur', name: 'TELUR 🥚🥚', isDailyInput: false, isRupiah: true },
+        { key: 'sosis_bakar', name: 'SOSIS BAKAR 🌭🌭', isDailyInput: false, isRupiah: false },
+        { key: 'dimsum_siomay', name: 'DIMSUM & SIOMAY 🫓🫓', isDailyInput: false, isRupiah: true }
+    ];
+
+    let currentReportState = {};
+    const globalInputIds = ['month-year', 'current-date', 'total-sales-prodsus'];
+    let isEditMode = false;
+    let currentEdit = { productKey: null, date: null, monthYear: null };
+
+    // --- UTILS ---
+    function formatNumber(num) {
+        if (isNaN(num)) num = 0;
+        return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(Math.abs(num));
+    }
+
+    function cleanAndParse(value) {
+        if (typeof value !== 'string' || value === '') return 0;
+        // Hanya ganti titik (pemisah ribuan) menjadi string kosong. Koma diasumsikan tidak ada.
+        return parseFloat(value.replace(/\./g, '').replace(/,/g, '')) || 0;
+    }
+
+    function formatRupiahInput(e) {
+        const input = e.target;
+        const cleanValue = input.value.replace(/\./g, '');
+        input.value = cleanValue === '' ? '' : formatNumber(cleanValue);
+        calculateAndDisplay();
+    }
+    
+    function formatRupiahModal(input) {
+        const cleanValue = input.value.replace(/\./g, '');
+        input.value = cleanValue === '' ? '' : formatNumber(cleanValue);
+    }
+    
+    function formatQtyInput() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        calculateAndDisplay();
+    }
+    
+    function formatGlobalInput() {
+        calculateAndDisplay();
+    }
+
+    // --- UI GENERATION ---
+    function generateProductInputs() {
+        const container = document.getElementById('all-inputs-container');
+        let html = '';
+
+        // 1. Global Inputs
+        html += `
+            <div class="input-group">
+                <label for="month-year">Bulan & Tahun:</label>
+                <input type="text" id="month-year" value="November 2025">
+                <span class="note">Contoh: September 2025</span>
+            </div>
+            <div class="input-group">
+                <label for="current-date">Tanggal Hari Ini:</label>
+                <input type="text" id="current-date" value="2" inputmode="numeric" pattern="[0-9]*">
+                <span class="note">Angka hari (1-31)</span>
+            </div>
+        `;
+
+        // 2. Product Inputs
+        PRODUCTS.forEach(product => {
+            const isRupiah = product.isRupiah;
+            const inputType = product.isDailyInput ? 'Sales Hari Ini (Qty)' : 'AKM s/d Hari Ini';
+            const note = product.isDailyInput ? 'Input: Sales Hari Ini (Bukan AKM)' : 'Input: Akumulasi (Total) s/d Tanggal Hari Ini';
+            
+            html += `
+                <div class="input-group">
+                    <label for="${product.key}-input">${product.name} (${inputType}):</label>
+                    <input type="text" id="${product.key}-input" value=""
+                           class="product-input ${isRupiah ? 'rupiah-input' : 'qty-input'}"
+                           inputmode="numeric" pattern="[0-9.]*">
+                    <span class="note">${note}</span>
+                </div>
+            `;
+        });
+        
+        // 3. Total Sales Prodsus Input
+        html += `
+            <div class="input-group" style="grid-column: 1 / -1; background-color: #e8f5ff;">
+                <label for="total-sales-prodsus">Total Sales Prodsus AKM:</label>
+                <input type="text" id="total-sales-prodsus" value="" class="rupiah-input" inputmode="numeric" pattern="[0-9.]*">
+                <span class="note">Input: Total AKM seluruh Produk Khusus (Hanya untuk keperluan display di laporan)</span>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+
+        // Attach event listeners
+        document.getElementById('month-year').addEventListener('input', formatGlobalInput);
+        document.getElementById('current-date').addEventListener('input', formatGlobalInput);
+
+        document.querySelectorAll('.rupiah-input').forEach(input => {
+            input.addEventListener('input', formatRupiahInput);
+        });
+        document.querySelectorAll('.qty-input').forEach(input => {
+            input.addEventListener('input', formatQtyInput);
+        });
+    }
+    // --- END UI GENERATION ---
+
+    // --- CORE CALCULATION & RENDERING ---
+    function calculateAndDisplay() {
+        const monthYear = document.getElementById('month-year').value.trim();
+        const dateInput = cleanAndParse(document.getElementById('current-date').value);
+        const currentDate = Math.max(1, Math.floor(dateInput)); 
+
+        const currentKey = `${monthYear}`;
+        if (!currentKey || currentDate === 0) {
+            document.getElementById('report-output').textContent = "Lengkapi Bulan & Tahun serta Tanggal Hari Ini untuk memulai perhitungan.";
+            return;
+        }
+
+        let dataBulanIni = currentReportState[currentKey] || {};
+        let reportText = `_*PENJUALAN PRODUK KHUSUS FOKUS 10 MODUL T3EI TAMAN PONDOK JATI ${monthYear.toUpperCase()}*_ \n\n`;
+
+        PRODUCTS.forEach((product, index) => {
+            
+            // 1. Generate Laporan per Produk
+            reportText += `## ${index + 1}. ${product.name} \n`;
+            reportText += `Tgl_Sales_Akm_spd\n\n`;
+
+            // Tampilkan data riwayat hari per hari
+            for (let d = 1; d <= 31; d++) { 
+                const record = dataBulanIni[product.key] ? dataBulanIni[product.key][d] : null;
+                if (record) {
+                    const salesDisplay = formatNumber(record.sales);
+                    const akmDisplay = formatNumber(record.akm);
+                    const spdDisplay = formatNumber(record.spd);
+
+                    const line = `${d}. ${salesDisplay}/${akmDisplay}/${spdDisplay}`;
+                    
+                    if(isEditMode) {
+                        // Tampilkan sebagai baris yang dapat diklik (editable)
+                        reportText += `<span class="report-line editable" 
+                            onclick="openEditModal('${product.key}', ${d}, '${monthYear}')">
+                            ${line}
+                        </span>\n`;
+                    } else {
+                        reportText += `${line}\n`;
+                    }
+                }
+            }
+            reportText += `\n---\n\n`;
+        });
+        
+        // 2. Finalisasi Total Sales Prodsus
+        const totalSalesProdsusInput = cleanAndParse(document.getElementById('total-sales-prodsus').value);
+        const totalSalesDisplay = formatNumber(totalSalesProdsusInput);
+        // Perhitungan SPD seharusnya: AKM / CurrentDate
+        const totalSPDProdsus = currentDate > 0 ? totalSalesProdsusInput / currentDate : 0;
+        const totalSPDDisplay = formatNumber(totalSPDProdsus);
+
+        // Update Global State
+        dataBulanIni.currentDate = currentDate;
+        currentReportState[currentKey] = dataBulanIni;
+        
+        // 3. Generate Footer Laporan
+        reportText += `📊 *Total Sales Prodsus : Rp.${totalSalesDisplay}*\n`;
+        reportText += `📊 *SPD Prodsus : Rp.${totalSPDDisplay} *\n`;
+
+        document.getElementById('report-output').innerHTML = reportText;
+    }
+
+    function recordAndReset() {
+        const monthYear = document.getElementById('month-year').value.trim();
+        const dateInput = cleanAndParse(document.getElementById('current-date').value);
+        const currentDate = Math.max(1, Math.floor(dateInput)); 
+
+        if (!monthYear || currentDate === 0) {
+            alert('Masukkan Bulan & Tahun serta Tanggal Hari Ini terlebih dahulu.');
+            return;
+        }
+
+        const currentKey = `${monthYear}`;
+        let dataBulanIni = currentReportState[currentKey] || {};
+
+        // Cek apakah tanggal sudah pernah direkam
+        const firstProductKey = PRODUCTS[0].key;
+        if (dataBulanIni[firstProductKey] && dataBulanIni[firstProductKey][currentDate]) {
+            if (!confirm(`Tanggal ${currentDate} sudah memiliki data rekaman. Melanjutkan akan MENIMPA data lama. Lanjutkan?`)) {
+                return;
+            }
+        }
+
+        if (dataBulanIni.currentDate && dataBulanIni.currentDate > currentDate) {
+             if (!confirm(`Peringatan: Tanggal Hari Ini (${currentDate}) lebih kecil dari Tanggal terakhir yang tersimpan (${dataBulanIni.currentDate}). Data akan menimpa data tanggal ${currentDate}. Lanjutkan?`)) {
+                return;
+            }
+        }
+        
+        // Lakukan perhitungan untuk data input saat ini sebelum disimpan
+        PRODUCTS.forEach((product) => {
+            const inputElement = document.getElementById(`${product.key}-input`);
+            if (!inputElement) return;
+
+            const inputVal = cleanAndParse(inputElement.value);
+            const prevDay = currentDate - 1;
+            
+            // PERBAIKAN: Mengambil AKM hari sebelumnya dengan akses yang lebih aman untuk Say Bread/Produk lain
+            let prevAKM = 0;
+            if (dataBulanIni[product.key] && dataBulanIni[product.key][prevDay]) {
+                prevAKM = dataBulanIni[product.key][prevDay].akm;
+            }
+            
+            let salesHariIni = 0;
+            let akmHariIni = 0;
+
+            if (product.isDailyInput) {
+                // LOGIC KHUSUS SAY BREAD: Input adalah Sales Harian (Daily Sales)
+                salesHariIni = inputVal;
+                // AKM = AKM Hari Sebelumnya + Sales Hari Ini
+                akmHariIni = prevAKM + salesHariIni; 
+            } else {
+                // Produk Lain: Input adalah AKM Hari Ini (Akumulasi Rupiah/Qty)
+                akmHariIni = inputVal; 
+                
+                // Sales Harian = AKM Hari Ini - AKM Hari Sebelumnya
+                salesHariIni = akmHariIni - prevAKM;
+
+                // FIX: Pastikan Sales tidak negatif. Jika negatif, atur ke 0.
+                salesHariIni = Math.max(0, salesHariIni);
+            }
+            
+            const spdHariIni = currentDate > 0 ? akmHariIni / currentDate : 0;
+            
+            // Rekam data baru
+            dataBulanIni[product.key] = dataBulanIni[product.key] || {};
+            dataBulanIni[product.key][currentDate] = {
+                sales: salesHariIni,
+                akm: akmHariIni,
+                spd: spdHariIni
+            };
+        });
+
+        // Update Global State
+        dataBulanIni.currentDate = currentDate;
+        currentReportState[currentKey] = dataBulanIni;
+
+        // 1. Simpan ke Cloud
+        saveData(true); 
+
+        // 2. Kosongkan Kolom Input (kecuali Bulan & Tahun, Tanggal, dan Total Sales Prodsus AKM)
+        document.getElementById('current-date').value = currentDate + 1; // Pindah ke tanggal berikutnya
+
+        PRODUCTS.forEach(product => {
+            document.getElementById(`${product.key}-input`).value = '';
+        });
+        
+        // 3. Tampilkan Hasil
+        calculateAndDisplay(); 
+        alert('Data berhasil direkam ke Cloud dan kolom input telah di-reset! Pindah ke Tanggal ' + (currentDate + 1));
+    }
+
+    // --- FITUR RESET & RESTORE BARU ---
+
+    function resetAllData() {
+        if (!confirm("PERINGATAN! Tindakan ini akan menghapus SEMUA data laporan bulanan di Cloud dan memulai yang baru. Data akan di-backup sementara. Apakah Anda yakin?")) {
+            return;
+        }
+
+        // 1. Backup current monthlyState to a separate node
+        const backupRef = database.ref(BACKUP_NODE);
+
+        backupRef.set(currentReportState)
+            .then(() => {
+                console.log('Data lama berhasil di-backup.');
+
+                // 2. Reset monthlyState in the main node
+                laporanProdsusRef.child('monthlyState').set({})
+                    .then(() => {
+                        currentReportState = {};
+                        
+                        // 3. Reset all input fields for new month
+                        document.getElementById('month-year').value = '';
+                        document.getElementById('current-date').value = '1'; 
+                        document.getElementById('total-sales-prodsus').value = ''; // Reset total AKM
+                        PRODUCTS.forEach(product => {
+                            document.getElementById(`${product.key}-input`).value = '';
+                        });
+
+                        // 4. Reset lastInput data
+                        laporanProdsusRef.child('lastInput').set({})
+                            .then(() => {
+                                calculateAndDisplay();
+                                alert('✅ Reset data bulanan berhasil! Data lama sudah tersimpan di backup. Silakan isi Bulan & Tahun baru.');
+                            })
+                            .catch(error => {
+                                console.error('Gagal mereset lastInput:', error);
+                            });
+                    })
+                    .catch(error => {
+                        console.error('Gagal mereset data utama:', error);
+                        alert('Gagal mereset data utama. Silakan coba lagi.');
+                    });
+            })
+            .catch(error => {
+                console.error('Gagal membuat backup:', error);
+                alert('Peringatan: Gagal membuat backup. Reset dibatalkan. Koneksi Cloud bermasalah.');
+            });
+    }
+
+    function restoreLastBackup() {
+        if (!database) {
+            alert('Gagal terhubung ke Cloud.');
+            return;
+        }
+
+        if (!confirm("PERINGATAN! Tindakan ini akan menimpa SEMUA data laporan bulanan Anda saat ini dengan data backup terakhir. Lanjutkan?")) {
+            return;
+        }
+        
+        const backupRef = database.ref(BACKUP_NODE);
+
+        backupRef.once('value')
+            .then((snapshot) => {
+                const backupData = snapshot.val();
+                if (backupData && Object.keys(backupData).length > 0) {
+                    
+                    // 1. Overwrite the main monthlyState with backup data
+                    laporanProdsusRef.child('monthlyState').set(backupData)
+                        .then(() => {
+                            // 2. Reload data from main node (will load monthlyState and lastInput)
+                            loadData(); 
+                            alert('✅ Pemulihan data dari backup terakhir berhasil. Halaman akan dimuat ulang dengan data backup.');
+                        })
+                        .catch(error => {
+                            console.error('Gagal menimpa data utama dengan backup:', error);
+                            alert('Gagal memulihkan data. Koneksi Cloud bermasalah.');
+                        });
+                } else {
+                    alert('❌ Tidak ada data backup yang ditemukan untuk dipulihkan.');
+                }
+            })
+            .catch(error => {
+                console.error("Gagal memuat data backup:", error);
+                alert('Gagal memuat data backup. Koneksi Cloud bermasalah.');
+            });
+    }
+
+    // --- FIREBASE FUNCTIONS ---
+    function saveData(isRecord = false) {
+        if (!database || !laporanProdsusRef) {
+             console.error("Gagal menyimpan. Koneksi Cloud bermasalah.");
+             return;
+        }
+        
+        // Simpan input terakhir (termasuk total-sales-prodsus)
+        const lastInput = {};
+        
+        globalInputIds.forEach(id => {
+            lastInput[id] = document.getElementById(id).value;
+        });
+        PRODUCTS.forEach(product => {
+            lastInput[product.key] = document.getElementById(`${product.key}-input`).value;
+        });
+        
+        // Data yang disimpan adalah: State Bulanan (untuk perhitungan), dan Input Terakhir (untuk display)
+        const dataToSave = {
+            monthlyState: currentReportState,
+            lastInput: lastInput
+        };
+
+        laporanProdsusRef.set(dataToSave)
+            .then(() => { console.log('Data laporan prodsus berhasil disimpan ke Cloud.'); })
+            .catch(error => { console.error('Gagal menyimpan data ke Cloud: ', error); });
+    }
+
+    function loadData() {
+        if (!database || !laporanProdsusRef) {
+            calculateAndDisplay();
+            return;
+        }
+
+        laporanProdsusRef.once('value')
+            .then((snapshot) => {
+                const data = snapshot.val();
+                if (data && data.monthlyState) {
+                    currentReportState = data.monthlyState;
+                    
+                    // Muat kembali input terakhir (termasuk total-sales-prodsus)
+                    if (data.lastInput) {
+                        const lastInput = data.lastInput;
+                        globalInputIds.forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el && lastInput[id] !== undefined) {
+                                el.value = lastInput[id];
+                                // Format rupiah input saat loading
+                                if (el.classList.contains('rupiah-input')) {
+                                    formatRupiahModal(el);
+                                }
+                            }
+                        });
+                        PRODUCTS.forEach(product => {
+                            const inputEl = document.getElementById(`${product.key}-input`);
+                            if (inputEl && lastInput[product.key] !== undefined) {
+                                inputEl.value = lastInput[product.key];
+                                if (inputEl.classList.contains('rupiah-input')) {
+                                    formatRupiahModal(inputEl);
+                                }
+                            }
+                        });
+                    }
+
+                    // Panggil fungsi hitung dan tampilkan setelah data dimuat
+                    calculateAndDisplay();
+                } else {
+                    // Jika tidak ada data, hitung dengan nilai default
+                    calculateAndDisplay();
+                }
+            })
+            .catch((error) => {
+                console.error("Gagal memuat data dari Cloud:", error);
+                calculateAndDisplay();
+            });
+    }
+
+    // --- EDIT MODE FUNCTIONS ---
+    function toggleEditMode() {
+        isEditMode = !isEditMode;
+        const button = document.getElementById('edit-toggle-button');
+        if (isEditMode) {
+            button.textContent = 'Nonaktifkan Mode Edit Laporan';
+            button.style.backgroundColor = '#e67e22';
+            alert('Mode Edit Aktif! Klik pada baris laporan untuk mengoreksi data (Sales, AKM, SPD).');
+        } else {
+            button.textContent = 'Aktifkan Mode Edit Laporan';
+            button.style.backgroundColor = '#3498db';
+        }
+        calculateAndDisplay(); // Re-render untuk mengaktifkan/menonaktifkan link
+    }
+    
+    function getProductInfo(key) {
+        return PRODUCTS.find(p => p.key === key);
+    }
+
+    function promptAddRecord() {
+        closeModal(); // Tutup modal edit yang mungkin terbuka
+        const monthYear = document.getElementById('month-year').value.trim();
+        
+        if (!monthYear) {
+            return alert('Mohon isi Bulan & Tahun terlebih dahulu.');
+        }
+
+        const productKey = prompt('Masukkan Kode Produk yang ingin ditambah (Contoh: mr_bread, say_bread):');
+        if (!productKey) return;
+
+        const product = getProductInfo(productKey);
+        if (!product) {
+            return alert('Kode Produk tidak valid. Gunakan kode seperti mr_bread, say_bread, fried_chicken, dll.');
+        }
+
+        const dateStr = prompt('Masukkan Tanggal yang ingin ditambah (Angka 1-31):');
+        const date = parseInt(dateStr);
+        if (isNaN(date) || date < 1 || date > 31) return alert('Tanggal tidak valid.');
+
+        openEditModal(productKey, date, monthYear, true); // Buka modal untuk mode tambah
+        document.getElementById('modal-sales').value = '';
+        document.getElementById('modal-akm').value = '';
+        document.getElementById('modal-date-info').textContent = `Tanggal ${date} (Tambah Baru)`;
+        document.querySelector('#editModal .save-button:nth-child(2)').style.display = 'none'; // Sembunyikan tombol hapus
+        document.querySelector('#editModal .save-button:nth-child(1)').textContent = 'Simpan Data Baru';
+        document.getElementById('modal-warning-text').textContent = '* Setelah menyimpan data baru, Anda harus mengoreksi AKM/SPD tanggal setelahnya secara manual.';
+    }
+
+    function openEditModal(productKey, date, monthYear, isNew = false) {
+        
+        const product = getProductInfo(productKey);
+        const records = currentReportState[monthYear][productKey];
+        const record = records ? records[date] : null;
+
+        if (!isNew && !record) return alert('Data tidak ditemukan untuk tanggal ini.');
+        
+        currentEdit = { productKey, date, monthYear };
+        
+        const modal = document.getElementById('editModal');
+        document.getElementById('modal-info-text').textContent = 
+            `Mengoreksi data ${product.name} Bulan ${monthYear}.`;
+        document.getElementById('modal-date-info').textContent = `Tanggal ${date}`;
+        document.querySelector('#editModal .save-button:nth-child(2)').style.display = 'flex'; // Tampilkan tombol hapus
+        document.querySelector('#editModal .save-button:nth-child(1)').textContent = 'Simpan Perubahan';
+        document.getElementById('modal-warning-text').textContent = '* Koreksi nilai AKM akan memengaruhi perhitungan SPD.';
+
+        if (record) {
+            document.getElementById('modal-sales').value = formatNumber(record.sales);
+            document.getElementById('modal-akm').value = formatNumber(record.akm);
+            document.getElementById('modal-spd').value = formatNumber(record.spd);
+        } else {
+            // Untuk mode tambah baru
+            document.getElementById('modal-sales').value = '';
+            document.getElementById('modal-akm').value = '';
+            document.getElementById('modal-spd').value = '0';
+        }
+        
+        modal.style.display = "block";
+    }
+
+    function applyEdit() {
+        const { productKey, date, monthYear } = currentEdit;
+        const product = getProductInfo(productKey);
+        
+        if (!productKey || !date || !monthYear) return;
+
+        const newSales = cleanAndParse(document.getElementById('modal-sales').value);
+        const newAkm = cleanAndParse(document.getElementById('modal-akm').value);
+        
+        // Recalculate SPD based on AKM and Date
+        const newSpd = date > 0 ? newAkm / date : 0;
+
+        // Ensure monthly state exists
+        currentReportState[monthYear] = currentReportState[monthYear] || {};
+        currentReportState[monthYear][productKey] = currentReportState[monthYear][productKey] || {};
+
+        // Update/Insert record
+        currentReportState[monthYear][productKey][date] = {
+            sales: newSales,
+            akm: newAkm,
+            spd: newSpd 
+        };
+
+        // Simpan perubahan ke Cloud
+        saveData(true); 
+
+        // Tutup modal dan refresh tampilan
+        closeModal();
+        calculateAndDisplay(); 
+        alert(`Data ${product.name} Tanggal ${date} berhasil disimpan/dikoreksi.`);
+    }
+
+    function deleteRecord() {
+        const { productKey, date, monthYear } = currentEdit;
+        const product = getProductInfo(productKey);
+
+        if (!confirm(`Anda yakin ingin menghapus data ${product.name} pada Tanggal ${date} secara permanen? Penghapusan ini TIDAK akan mengoreksi AKM/SPD hari berikutnya secara otomatis. Anda HARUS mengoreksi data hari berikutnya secara manual setelah ini.`)) {
+            return;
+        }
+
+        // Delete the record for the specific date
+        if (currentReportState[monthYear] && currentReportState[monthYear][productKey] && currentReportState[monthYear][productKey][date]) {
+            delete currentReportState[monthYear][productKey][date];
+            
+            // Simpan perubahan ke Cloud
+            saveData(true); 
+
+            // Tutup modal dan refresh tampilan
+            closeModal();
+            calculateAndDisplay(); 
+            alert(`Data ${product.name} Tanggal ${date} berhasil dihapus. Harap periksa dan koreksi data AKM/SPD hari berikutnya.`);
+        } else {
+            alert('Gagal menghapus: Data tidak ditemukan dalam state.');
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('editModal').style.display = "none";
+        currentEdit = { productKey: null, date: null, monthYear: null };
+    }
+    window.onclick = function(event) {
+        const modal = document.getElementById('editModal');
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
+
+    // --- OTHERS ---
+    function copyToClipboard() {
+        const outputText = document.getElementById('report-output').textContent;
+        navigator.clipboard.writeText(outputText).then(() => {
+            alert('Laporan berhasil disalin ke clipboard!');
+        }).catch(err => {
+            console.error('Gagal menyalin teks: ', err);
+            alert('Gagal menyalin laporan.');
+        });
+    }
+
+    // --- INISIALISASI ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // 1. Generate semua kolom input
+        generateProductInputs(); 
+        
+        // 2. Muat data tersimpan dari Cloud (akan mengisi kolom input)
+        loadData();
+    });
+</script>
+
+</body>
+</html>
