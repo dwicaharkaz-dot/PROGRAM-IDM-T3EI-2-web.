@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Stock Opname IDM T3EI (PRODSUS)</title>
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:0; background:#ecf0f1; }
+    .header-top { display:flex; justify-content:space-between; align-items:center;
+                  padding:10px 20px; background:white; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+    .header-top img { height:40px; }
+    .header-bg { display:flex; height:10px; }
+    .color-red{flex:1;background:#e74c3c}.color-blue{flex:1;background:#3498db}.color-yellow{flex:1;background:#f1c40f}
+    header h1 { text-align:center; font-size:1.6rem; margin:0; color:#333; }
+    .container { width:94%; max-width:1200px; margin:18px auto; background:white; padding:16px;
+                 border-radius:10px; box-shadow:0 0 12px rgba(0,0,0,.08); }
+    textarea { width:80%; height:110px; padding:10px; border:1px solid #ccc; border-radius:5px; }
+    button { padding:8px 14px; border:none; border-radius:6px; cursor:pointer; }
+    .small { padding:8px 12px; font-size:.95rem; }
+    .controls-row { display:flex; gap:10px; align-items:center; justify-content:center; margin-top:10px; flex-wrap:wrap; }
+    .search-bar { text-align:center; margin:12px 0; }
+    .search-bar input { width:72%; max-width:520px; padding:10px; border:1px solid #ddd;
+                        border-radius:25px; text-align:center; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th,td { border:1px solid #ddd; padding:8px; text-align:center; vertical-align:middle; }
+    th { background:#f2f2f2; }
+    .stok-sistem-cell input.locked { background:#3498db; color:white; pointer-events:none; }
+    .stok-sistem-cell input.editable { background:#fff3b0; color:black; pointer-events:auto; }
+    .selisih-negatif{color:#e74c3c;font-weight:bold}
+    .selisih-positif{color:#27ae60;font-weight:bold}
+    .btn-yellow { background:#ffd966; color:#222; border:1px solid #e6b800; }
+    .btn-edit { background:#3498db; color:white; }
+    .download-btn { background:#3498db; color:white; margin:10px 5px; }
+    .section-title { text-align:center; font-size:1.25rem; color:#333; margin:14px 0 6px; }
+    .total-box { text-align:center; font-size:1.05rem; font-weight:bold; padding:10px;
+                 border:2px dashed #3498db; border-radius:8px; background:#e8f5ff; margin-top:10px; }
+  </style>
+</head>
+<body>
+
+  <div class="header-top">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/9/9d/Logo_Indomaret.png" alt="Logo Indomaret">
+    <header><h1>STOCK OPNAME IDM T3EI (PRODSUS)</h1></header>
+    <div></div>
+  </div>
+  <div class="header-bg"><div class="color-red"></div><div class="color-blue"></div><div class="color-yellow"></div></div>
+
+  <button style="
+      background-color: #f1c40f; 
+      color: #333;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 10px 0 0 18px;"
+      onclick="window.location.href='index.html'">
+      ← Kembali ke Stock Opname
+  </button>
+
+  <div class="container">
+    <h2 class="section-title">Input Data Stok Sistem</h2>
+    <textarea id="dataInput" placeholder="Format: plu,nama barang,harga,stok"></textarea>
+    <div class="controls-row">
+      <button class="small btn-yellow" onclick="addData()">Tambah Stok</button>
+      <button class="small btn-yellow" onclick="fillExample()">Isi Contoh 5 Barang</button>
+      <button class="small" style="background:#e74c3c;color:white" onclick="resetStok()">Reset Stok Sistem</button>
+    </div>
+
+    <h2 class="section-title">Import Data Stok Sistem (XLSX)</h2>
+    <div style="text-align:center;"><input type="file" id="fileInput" accept=".xlsx" /></div>
+
+    <h2 class="section-title">Pencarian</h2>
+    <div class="search-bar"><input type="text" id="searchInput" placeholder="Cari PLU atau Nama Barang..."></div>
+
+    <h2 class="section-title">Data Stock Opname</h2>
+    <div style="text-align:center; margin-bottom:10px;">
+      <button id="toggleEditBtn" class="small btn-edit" onclick="toggleEditSistem()">Edit Stok Sistem</button>
+    </div>
+
+    <table id="stokTable">
+      <thead>
+        <tr>
+          <th>PLU</th><th>Nama Barang</th><th>Harga</th><th>Stok Sistem</th>
+          <th>Stok Fisik</th><th>Selisih QTY</th><th>Selisih Rupiah</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div style="text-align:center; margin-top:10px;">
+      <button class="download-btn" onclick="downloadXLSX('stokTable','Semua_Data_Stock_Opname_Prodsus.xlsx')">Download Semua Data (XLSX)</button>
+    </div>
+  </div>
+
+  <div class="container" id="selisihContainer" style="display:none;">
+    <h2 class="section-title">Item Selisih</h2>
+    <h3>Item Minus</h3>
+    <table id="selisihMinusTable"><thead><tr><th>PLU</th><th>Nama</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih QTY</th><th>Selisih Rupiah</th></tr></thead><tbody></tbody></table>
+    <h3 style="margin-top:12px;">Item Plus</h3>
+    <table id="selisihPlusTable"><thead><tr><th>PLU</th><th>Nama</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih QTY</th><th>Selisih Rupiah</th></tr></thead><tbody></tbody></table>
+    <div class="total-box" id="totalMinus">Total Rupiah Minus: Rp 0</div>
+    <div class="total-box" id="totalPlus">Total Rupiah Plus: Rp 0</div>
+    <div class="total-box" id="totalAll">Total Selisih Rupiah: Rp 0</div>
+    <div style="text-align:center; margin-top:12px;">
+      <button class="download-btn" onclick="downloadSelisih()">Download Data Selisih (XLSX)</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <script>
+    // ===================================================================================
+    // ☁️ FIREBASE CLOUD CONFIGURATION & INIT ☁️
+    // ===================================================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyDlaMjPJDQPQMZMTPSLDOuI_j47kKJEJmSWK", 
+        authDomain: "barcode-qscv.firebaseapp.com",
+        databaseURL: "https://barcode-qscv-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "barcode-qscv",
+        storageBucket: "barcode-qscv.appspot.com",
+        messagingSenderId: "204134538515",
+        appId: "1:204134538515:web:394a3880ced41726950eeb"
+    };
+
+    let database;
+    let soProdsusRef;
+
+    try {
+        firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+        // Menyimpan data SO Prodsus di node terpisah
+        soProdsusRef = database.ref('so_prodsus/list'); 
+    } catch (e) {
+        console.error("FIREBASE ERROR: Gagal menginisialisasi Firebase.", e);
+        // Fallback: Jika gagal, database akan tetap undefined, dan aplikasi akan berjalan tanpa cloud save.
+    }
+
+    function saveToCloud() {
+      if (!database || !soProdsusRef) return;
+      // Menghapus properti sementara jika ada, lalu simpan allItems
+      const itemsToStore = allItems.map(({ ...rest }) => rest);
+      soProdsusRef.set(itemsToStore)
+        .then(() => { console.log("Data SO Prodsus berhasil disimpan ke Cloud."); })
+        .catch((error) => { console.error("Gagal menyimpan ke Cloud:", error); });
+    }
+
+    function loadFromCloud() {
+      if (!database || !soProdsusRef) {
+          renderTable();
+          return;
+      }
+      soProdsusRef.once('value')
+        .then((snapshot) => {
+          const data = snapshot.val();
+          if (data && Array.isArray(data)) {
+            allItems = data;
+          } else {
+            allItems = []; 
+          }
+          renderTable(); 
+        })
+        .catch((error) => {
+          console.error("Gagal memuat data dari Cloud:", error);
+          renderTable();
+        });
+    }
+    // ===================================================================================
+    // AKHIR FIREBASE CLOUD CONFIGURATION
+    // ===================================================================================
+
+    let allItems = [];
+    let editMode = false;
+
+    const tableBody = document.querySelector('#stokTable tbody');
+    const selisihMinusBody = document.querySelector('#selisihMinusTable tbody');
+    const selisihPlusBody  = document.querySelector('#selisihPlusTable tbody');
+    const selisihContainer = document.getElementById('selisihContainer');
+    const totalMinusEl = document.getElementById('totalMinus');
+    const totalPlusEl  = document.getElementById('totalPlus');
+    const totalAllEl   = document.getElementById('totalAll');
+    const toggleEditBtn= document.getElementById('toggleEditBtn');
+    const searchInput  = document.getElementById('searchInput');
+    const fileInput    = document.getElementById('fileInput');
+
+    function toNumber(v){ return Number(v) || 0; }
+    function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function fillExample(){
+      // Diubah untuk mencerminkan format: plu,nama barang,harga,stok
+      document.getElementById('dataInput').value = [
+        "2001,Frisian Flag Full Cream 900g,100000,5",
+        "2002,Entrasol Gold Cokelat 600g,85000,3",
+        "2003,Ensure Vanila 400g,70000,2",
+        "2004,Dancow Fortigro 800g,55000,7",
+        "2005,Prenagen Mommy Cokelat 400g,45000,4"
+      ].join('\n');
+    }
+
+    function addData(){
+      const lines=document.getElementById('dataInput').value.trim().split('\n').filter(l=>l);
+      const existingPlu = new Set(allItems.map(item => String(item.plu).trim()));
+      
+      lines.forEach(line=>{
+        const d=line.split(',').map(x=>x.trim());
+        if(d.length===4){
+          const pluKey = String(d[0]).trim();
+          if(!existingPlu.has(pluKey)) {
+             allItems.push({plu:d[0],nama:d[1],harga:toNumber(d[2]),stokSistem:toNumber(d[3]),stokFisik:0});
+          }
+        }
+      });
+      document.getElementById('dataInput').value='';
+      renderTable();
+      saveToCloud(); // <-- Simpan ke Cloud
+    }
+
+    function resetStok(){
+      allItems=[]; 
+      renderTable(); 
+      selisihContainer.style.display='none';
+      saveToCloud(); // <-- Simpan perubahan ke Cloud
+    }
+
+    function toggleEditSistem(){
+      editMode=!editMode;
+      toggleEditBtn.style.background = editMode ? '#f1c40f' : '#3498db';
+      toggleEditBtn.style.color = editMode ? 'black' : 'white';
+      toggleEditBtn.textContent = editMode ? 'Kunci Stok Sistem' : 'Edit Stok Sistem';
+      renderTable();
+    }
+
+    function updateSistem(plu, el){
+      const item=allItems.find(i=>i.plu===plu); if(!item) return;
+      item.stokSistem=toNumber(el.value); 
+      renderTable();
+      saveToCloud(); // <-- Simpan perubahan ke Cloud
+    }
+
+    // stok fisik support "2,2,3"
+    function updateFisik(plu, el){
+      const item=allItems.find(i=>i.plu===plu); if(!item) return;
+      const raw=el.value.trim();
+      let total = 0;
+      if(raw===''){ 
+        total=0; 
+      }
+      else {
+        const parts=raw.split(/[^0-9]+/).map(p=>parseInt(p.trim())||0);
+        total=parts.reduce((a,b)=>a+b,0);
+      }
+      item.stokFisik=total;
+      el.value=total; // Update input value to the summed total
+      renderTable();
+      saveToCloud(); // <-- Simpan perubahan ke Cloud
+    }
+
+    // pindah input dengan Enter/Tab
+    function verticalNav(e){
+      if(e.key==='Enter'||e.key==='Tab'){
+        e.preventDefault();
+        const selector = e.target.classList.contains('stok-sistem-input')?'.stok-sistem-input':'.stok-fisik-input';
+        const inputs=[...document.querySelectorAll(selector)];
+        const idx=inputs.indexOf(e.target);
+        let next= idx + (e.shiftKey?-1:1);
+        if(next>=0 && next<inputs.length){
+          inputs[next].focus(); inputs[next].select?.();
+        }
+      }
+    }
+    
+    function formatRupiah(number) {
+        return 'Rp ' + (Number(number) || 0).toLocaleString('id-ID');
+    }
+
+    function renderTable(){
+      tableBody.innerHTML='';
+      allItems.forEach(it=>{
+        const selisihQty=it.stokFisik-it.stokSistem;
+        const selisihRp=selisihQty*it.harga;
+        const tr=document.createElement('tr');
+        const sistemInput=`<input type="text" inputmode="numeric" pattern="[0-9]*"
+           value="${it.stokSistem}" 
+           ${editMode?'':'disabled'} class="stok-sistem-input ${editMode?'editable':'locked'}"
+           onblur="updateSistem('${it.plu}', this)">`;
+        const fisikInput=`<input type="text" inputmode="numeric" pattern="[0-9]*"
+           value="${it.stokFisik || ''}" 
+           class="stok-fisik-input" onblur="updateFisik('${it.plu}', this)">`;
+        tr.innerHTML=`
+          <td>${escapeHtml(it.plu)}</td>
+          <td>${escapeHtml(it.nama)}</td>
+          <td>${formatRupiah(it.harga)}</td>
+          <td class="stok-sistem-cell">${sistemInput}</td>
+          <td class="stok-fisik-cell">${fisikInput}</td>
+          <td class="${selisihQty<0?'selisih-negatif':selisihQty>0?'selisih-positif':''}">${selisihQty}</td>
+          <td class="${selisihQty<0?'selisih-negatif':selisihQty>0?'selisih-positif':''}">${formatRupiah(selisihRp)}</td>`;
+        tableBody.appendChild(tr);
+      });
+      // bind keyboard nav setiap render
+      document.querySelectorAll('.stok-sistem-input,.stok-fisik-input').forEach(inp=>{
+        inp.addEventListener('keydown',verticalNav);
+      });
+      updateSelisih();
+    }
+
+    function updateSelisih(){
+      let minus=[], plus=[], totalMinus=0, totalPlus=0;
+      allItems.forEach(it=>{
+        const qty=it.stokFisik-it.stokSistem; 
+        const rp=qty*it.harga;
+        if(qty<0){minus.push([it.plu,it.nama,it.stokSistem,it.stokFisik,qty,rp]); totalMinus+=rp;}
+        if(qty>0){plus.push([it.plu,it.nama,it.stokSistem,it.stokFisik,qty,rp]); totalPlus+=rp;}
+      });
+      
+      const formatSelisihRow = (r) => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${formatRupiah(r[5])}</td></tr>`;
+      
+      selisihMinusBody.innerHTML=minus.map(formatSelisihRow).join('');
+      selisihPlusBody.innerHTML=plus.map(formatSelisihRow).join('');
+      
+      selisihContainer.style.display=(minus.length||plus.length)?'block':'none';
+      totalMinusEl.textContent='Total Rupiah Minus: '+formatRupiah(totalMinus);
+      totalPlusEl.textContent='Total Rupiah Plus: '+formatRupiah(totalPlus);
+      totalAllEl.textContent='Total Selisih Rupiah: '+formatRupiah(totalMinus+totalPlus);
+      
+      window._minus=minus; window._plus=plus; window._totalMinus=totalMinus; window._totalPlus=totalPlus;
+    }
+
+    function downloadXLSX(tableId, filename){
+      const table=document.getElementById(tableId);
+      const clone=table.cloneNode(true);
+      clone.querySelectorAll('input').forEach(inp=>inp.parentElement.textContent=inp.value);
+      
+      // Update the headers/values in the cloned table to be clean numbers for Excel
+      const headers = ['PLU', 'Nama Barang', 'Harga', 'Stok Sistem', 'Stok Fisik', 'Selisih QTY', 'Selisih Rupiah'];
+      
+      const rows = [...clone.querySelectorAll('tbody tr')].map(tr => {
+          const cells = [...tr.cells];
+          // Clean up data for export (remove "Rp", replace '.' with '')
+          const harga = toNumber(cells[2].textContent.replace('Rp','').replace(/\./g,''));
+          const selisihRp = toNumber(cells[6].textContent.replace('Rp','').replace(/\./g,''));
+          return [
+              cells[0].textContent, // PLU
+              cells[1].textContent, // Nama Barang
+              harga,                // Harga (Number)
+              toNumber(cells[3].textContent), // Stok Sistem (Number)
+              toNumber(cells[4].textContent), // Stok Fisik (Number)
+              toNumber(cells[5].textContent), // Selisih QTY (Number)
+              selisihRp             // Selisih Rupiah (Number)
+          ];
+      });
+      
+      const aoa = [headers].concat(rows);
+      const ws=XLSX.utils.aoa_to_sheet(aoa);
+      const wb=XLSX.utils.book_new(); 
+      XLSX.utils.book_append_sheet(wb,ws,"Data"); 
+      XLSX.writeFile(wb,filename);
+    }
+
+    function downloadSelisih(){
+      const formatRp = (num) => toNumber(num).toFixed(0);
+      const aoa=[["ITEM MINUS"],["PLU","Nama","Stok Sistem","Stok Fisik","Selisih QTY","Selisih Rp"],
+                 ...window._minus.map(r => [r[0], r[1], r[2], r[3], r[4], formatRp(r[5])]),[],
+                 ["Total Rupiah Minus","","","","",formatRp(window._totalMinus)],[],
+                 ["ITEM PLUS"],["PLU","Nama","Stok Sistem","Stok Fisik","Selisih QTY","Selisih Rp"],
+                 ...window._plus.map(r => [r[0], r[1], r[2], r[3], r[4], formatRp(r[5])]),[],
+                 ["Total Rupiah Plus","","","","",formatRp(window._totalPlus)],[],
+                 ["TOTAL SELISIH RUPIAH","","","","",formatRp(window._totalMinus+window._totalPlus)]];
+      
+      const ws=XLSX.utils.aoa_to_sheet(aoa); 
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,"Selisih"); 
+      XLSX.writeFile(wb,"Data_Selisih_Prodsus.xlsx");
+    }
+
+    searchInput.addEventListener('input',()=>{
+      const q=searchInput.value.toLowerCase(); 
+      if(!q){renderTable();return;}
+      
+      // Quick filter display, does not modify allItems
+      const filtered=allItems.filter(i=>String(i.plu).toLowerCase().includes(q)||String(i.nama).toLowerCase().includes(q));
+      tableBody.innerHTML=''; 
+      
+      filtered.forEach(it=>{
+        const qty=it.stokFisik-it.stokSistem; 
+        const rp=qty*it.harga;
+        const tr=document.createElement('tr'); 
+        const sistemInput=`<input type="text" inputmode="numeric" pattern="[0-9]*"
+           value="${it.stokSistem}" 
+           ${editMode?'':'disabled'} class="stok-sistem-input ${editMode?'editable':'locked'}"
+           onblur="updateSistem('${it.plu}', this)">`;
+        const fisikInput=`<input type="text" inputmode="numeric" pattern="[0-9]*"
+           value="${it.stokFisik || ''}" 
+           class="stok-fisik-input" onblur="updateFisik('${it.plu}', this)">`;
+        
+        tr.innerHTML=`
+          <td>${escapeHtml(it.plu)}</td>
+          <td>${escapeHtml(it.nama)}</td>
+          <td>${formatRupiah(it.harga)}</td>
+          <td class="stok-sistem-cell">${sistemInput}</td>
+          <td class="stok-fisik-cell">${fisikInput}</td>
+          <td class="${qty<0?'selisih-negatif':qty>0?'selisih-positif':''}">${qty}</td>
+          <td class="${qty<0?'selisih-negatif':qty>0?'selisih-positif':''}">${formatRupiah(rp)}</td>`;
+        tableBody.appendChild(tr);
+      });
+      // Re-bind keyboard nav for filtered list
+      document.querySelectorAll('.stok-sistem-input,.stok-fisik-input').forEach(inp=>{
+        inp.addEventListener('keydown',verticalNav);
+      });
+    });
+
+    fileInput.addEventListener('change',e=>{
+      const f=e.target.files[0]; 
+      if(!f) return; 
+      const r=new FileReader();
+      
+      r.onload=ev=>{
+        const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+        const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1}).slice(1);
+        
+        const newItems = rows.map(r=>({
+            plu:String(r[0]),
+            nama:String(r[1]),
+            harga:toNumber(r[2]),
+            stokSistem:toNumber(r[3]),
+            stokFisik:toNumber(r[4]||0)
+        }));
+        
+        const existingPlu = new Set(allItems.map(item => String(item.plu).trim()));
+        const uniqueNewItems = newItems.filter(item => !existingPlu.has(String(item.plu).trim()));
+        
+        allItems = allItems.concat(uniqueNewItems);
+        renderTable();
+        saveToCloud(); // <-- Simpan ke Cloud
+      }; 
+      r.readAsArrayBuffer(f);
+    });
+
+    // 1. Muat data dari Cloud saat aplikasi dimulai
+    loadFromCloud(); 
+  </script>
+</body>
+</html>
