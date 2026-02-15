@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulasi Durian</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --secondary: #FFD700;
+            --dark: #2e7d32;
+        }
+        /* Perkecil font dasar agar lebih muat di layar */
+        body { font-family: sans-serif; background-color: #f0f4f0; margin: 0; padding: 10px; font-size: 13px; }
+        .container { max-width: 450px; margin: auto; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        .header { text-align: center; margin-bottom: 15px; }
+        .logo { font-size: 40px; margin: 0; }
+        h1 { color: var(--dark); font-size: 18px; margin: 5px 0; }
+
+        /* Layout Urut Kebawah */
+        .input-group { display: flex; flex-direction: column; margin-bottom: 10px; }
+        label { font-weight: bold; margin-bottom: 3px; font-size: 12px; }
+        input { padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
+        input[readonly] { background: #f9f9f9; color: #666; }
+
+        /* Tombol di bawah input berat tray */
+        .btn-group { display: flex; gap: 8px; margin: 10px 0; }
+        button { flex: 1; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .btn-save { background-color: var(--primary); color: white; }
+        .btn-reset { background-color: #e53935; color: white; }
+
+        /* Tabel yang diperkecil */
+        .table-container { overflow-x: auto; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; } /* Font tabel diperkecil */
+        th { background-color: var(--primary); color: white; padding: 6px; text-align: center; }
+        td { padding: 6px; border-bottom: 1px solid #ddd; text-align: center; }
+
+        .summary-box { background: #fffde7; padding: 10px; border-radius: 5px; border-left: 4px solid var(--secondary); margin: 10px 0; }
+        .summary-box p { margin: 3px 0; font-size: 12px; }
+        .total-section { background: #e8f5e9; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <p class="logo">🍈🥭🍉</p>
+        <h1>Kalkulasi Konversi Buah potong</h1>
+    </div>
+
+    <div class="input-group">
+        <label>Harga per KG (Rp)</label>
+        <input type="number" id="hargaKg" placeholder="Contoh: 70000" oninput="hitungDasar()">
+    </div>
+    
+    <div class="input-group">
+        <label>Berat Kotor/Buah+Kulit (Gram)</label>
+        <input type="number" id="beratKotor" placeholder="Contoh: 4000" oninput="hitungDasar()">
+    </div>
+
+    <div class="input-group">
+        <label>Berat Bersih/Tanpa Kulit (Gram)</label>
+        <input type="number" id="beratBersih" placeholder="Contoh: 1800" oninput="hitungDasar()">
+    </div>
+
+    <div class="input-group">
+        <label>Harga Per Gram Bersih (Otomatis)</label>
+        <input type="text" id="hargaPerGram" readonly>
+    </div>
+
+    <div class="summary-box">
+        <p>Total Harga Durian Utuh: <strong id="totalHargaUtuh">Rp 0</strong></p>
+    </div>
+
+    <hr style="border: 0.5px solid #eee;">
+
+    <div class="input-group" style="margin-top: 10px;">
+        <label>Berat Per Tray / Bungkus (Gram)</label>
+        <input type="number" id="beratTray" placeholder="Contoh: 350.6">
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-save" onclick="tambahData()">Simpan Data</button>
+        <button class="btn-reset" onclick="resetSemua()">Reset Data</button>
+    </div>
+
+    <div class="table-container">
+        <table id="tabelDurian">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Tray(g)</th>
+                    <th>Konv(g)</th>
+                    <th>Harga</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+
+    <div class="total-section">
+        <p><b>Total Berat:</b> <span id="totalBerat">0</span> g</p>
+        <p><b>Total Harga:</b> <span id="totalHarga">Rp 0</span></p>
+        <p style="color:red"><b>Selisih:</b> <span id="selisihHarga">Rp 0</span></p>
+    </div>
+</div>
+
+<script>
+    let database = JSON.parse(localStorage.getItem('durianDataV2')) || [];
+
+    window.onload = () => {
+        renderTabel();
+        hitungDasar();
+    };
+
+    function hitungDasar() {
+        const hrgKg = parseFloat(document.getElementById('hargaKg').value) || 0;
+        const bKotor = parseFloat(document.getElementById('beratKotor').value) || 0;
+        const bBersih = parseFloat(document.getElementById('beratBersih').value) || 0;
+
+        const totalUtuh = (hrgKg / 1000) * bKotor;
+        document.getElementById('totalHargaUtuh').innerText = "Rp " + Math.round(totalUtuh).toLocaleString();
+
+        if (bBersih > 0) {
+            const hrgGram = totalUtuh / bBersih;
+            document.getElementById('hargaPerGram').value = hrgGram.toFixed(2);
+        } else {
+            document.getElementById('hargaPerGram').value = "";
+        }
+        renderTabel(); // Update selisih saat harga dasar berubah
+    }
+
+    function tambahData() {
+        const hrgKg = parseFloat(document.getElementById('hargaKg').value);
+        const bTray = parseFloat(document.getElementById('beratTray').value);
+        const hrgGram = parseFloat(document.getElementById('hargaPerGram').value);
+
+        if (!hrgKg || !bTray || !hrgGram) {
+            alert("Lengkapi data diatas terlebih dahulu!");
+            return;
+        }
+
+        const hrgTray = bTray * hrgGram;
+        const konvKotor = (hrgTray / hrgKg) * 1000;
+
+        database.push({
+            beratTray: bTray,
+            konvKotor: konvKotor,
+            hargaTray: hrgTray
+        });
+
+        localStorage.setItem('durianDataV2', JSON.stringify(database));
+        renderTabel();
+        document.getElementById('beratTray').value = "";
+    }
+
+    function renderTabel() {
+        const tbody = document.getElementById('tbody');
+        tbody.innerHTML = "";
+        let tBerat = 0;
+        let tHarga = 0;
+
+        database.forEach((item, index) => {
+            tBerat += item.beratTray;
+            tHarga += item.hargaTray;
+            tbody.innerHTML += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.beratTray}</td>
+                    <td>${item.konvKotor.toFixed(1)}</td>
+                    <td>${Math.round(item.hargaTray).toLocaleString()}</td>
+                    <td><button onclick="hapusData(${index})" style="background:none; color:red; padding:0; font-size:10px;">Hapus</button></td>
+                </tr>
+            `;
+        });
+
+        document.getElementById('totalBerat').innerText = tBerat.toFixed(1);
+        document.getElementById('totalHarga').innerText = "Rp " + Math.round(tHarga).toLocaleString();
+        
+        const hrgKg = parseFloat(document.getElementById('hargaKg').value) || 0;
+        const bKotor = parseFloat(document.getElementById('beratKotor').value) || 0;
+        const totalUtuh = (hrgKg / 1000) * bKotor;
+        document.getElementById('selisihHarga').innerText = "Rp " + Math.round(tHarga - totalUtuh).toLocaleString();
+    }
+
+    function hapusData(index) {
+        database.splice(index, 1);
+        localStorage.setItem('durianDataV2', JSON.stringify(database));
+        renderTabel();
+    }
+
+    function resetSemua() {
+        if(confirm("Hapus semua data tabel?")) {
+            database = [];
+            localStorage.removeItem('durianDataV2');
+            renderTabel();
+        }
+    }
+</script>
+
+</body>
+</html>
