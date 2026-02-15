@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Stock Opname IDM T3EI</title>
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:0; background:#ecf0f1; }
+    .header-container { display:flex; justify-content:space-between; align-items:center;
+                  padding:10px 20px; background:white; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+    .header-container img { height:40px; }
+    .header-bg { display:flex; height:10px; }
+    .color-red{flex:1;background:#e74c3c}.color-blue{flex:1;background:#3498db}.color-yellow{flex:1;background:#f1c40f}
+    header h1 { text-align:center; font-size:2em; margin:20px 0; color:#333; }
+    .container { width:90%; max-width:1200px; margin:20px auto; background:white; padding:20px;
+                 border-radius:10px; box-shadow:0 0 15px rgba(0,0,0,.1); }
+    textarea { width:80%; height:120px; padding:10px; border:1px solid #ccc; border-radius:5px; }
+    button { padding:10px 20px; border:none; border-radius:5px; cursor:pointer; }
+    .input-form button { background:#2ecc71; color:white; }
+    .search-bar { text-align:center; margin:12px 0; }
+    .search-bar input { width:70%; max-width:500px; padding:10px; border:1px solid #ddd;
+                        border-radius:25px; text-align:center; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th,td { border:1px solid #ddd; padding:8px; text-align:center; }
+    th { background:#f2f2f2; }
+    /* Cursor hanya di PLU/Nama */
+    #stokTable tbody tr { cursor: default; } 
+    #stokTable td:nth-child(2), #stokTable td:nth-child(3) { cursor: pointer; } 
+    .stok-fisik-cell input { width:120px; padding:5px; }
+    .selisih-negatif{color:#e74c3c;font-weight:bold}.selisih-positif{color:#27ae60;font-weight:bold}
+    .download-btn { background:#3498db; color:white; margin:10px 5px; }
+    .section-title { text-align:center; font-size:1.5em; color:#555; margin:30px 0 10px; }
+    .total-box { text-align:center; font-size:1.1em; font-weight:bold; padding:10px;
+                 border:2px dashed #3498db; border-radius:8px; background:#e8f5ff; margin-top:10px; }
+    .controls-row { display:flex; gap:10px; align-items:center; justify-content:center; margin-top:10px; }
+    .small { padding:8px 12px; font-size:0.95rem; }
+    .hidden { display: none; }
+    
+    /* --- STYLING NAVIGASI & SPLIT STOK --- */
+    .menu-container { position: relative; display: flex; align-items: center; }
+    .menu-button { padding: 10px 15px; font-size: 1rem; cursor: pointer; background-color: #f1c40f; color: #333; border: none; border-radius: 5px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 101; margin-right: 20px; }
+    .menu-popup { display: none; position: absolute; top: 100%; left: 0; min-width: 180px; border: 1px solid #ccc; padding: 15px; background-color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border-radius: 8px; z-index: 100; }
+    .popup-button { display: block; width: 100%; padding: 10px; margin-bottom: 8px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left; font-size: 0.95rem; transition: background-color 0.2s; }
+    .popup-button:hover { background-color: #2980b9; }
+
+    /* --- PERUBAHAN CSS TOMBOL STOK TOKO/GUDANG --- */
+    .section-title.with-controls { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; }
+    
+    .stok-controls-group { 
+        display: flex; 
+        gap: 15px; /* Jarak antar grup tombol/status */
+        margin-bottom: 10px;
+    }
+    .stok-option-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .stok-split-btn { 
+        padding: 8px 12px; 
+        border-radius: 5px; 
+        cursor: pointer; 
+        font-size: 0.95rem; 
+        transition: all 0.2s; 
+        background: #f1c40f; 
+        color: #333; 
+        border: 1px solid #e6a700; 
+        font-weight: 500;
+    }
+    .stok-split-btn.active { 
+        border: 2px solid #2980b9; 
+        background: #3498db; 
+        color: white; 
+        font-weight: bold; 
+    }
+    .stok-status-label {
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: #2ecc71; /* Green color for active status */
+        min-height: 1.2rem; /* Reserve space */
+        margin-top: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .stok-status-label:empty {
+        display: none;
+    }
+    /* --- AKHIR PERUBAHAN CSS --- */
+    
+    /* Modal/Pop-up Rincian Stok & History */
+    .modal { display: none; position: fixed; z-index: 200; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+    .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 400px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+    .close:hover, .close:focus { color: #000; text-decoration: none; cursor: pointer; }
+    
+    #historyList { max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+    #historyList button { width: 100%; padding: 10px; margin-bottom: 5px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; text-align: left; font-size: 0.9rem; transition: background-color 0.2s; }
+    #historyList button:hover { background: #2980b9; }
+
+  </style>
+</head>
+<body>
+
+  <div class="header-container">
+    <div class="menu-container">
+        <button class="menu-button" onclick="toggleMenuPopup()">Menu ☰</button>
+        <div id="menuPopup" class="menu-popup">
+    <p style="margin-top: 0; font-weight: bold;">Pilih Aksi:</p>
+    <button class="popup-button" onclick="goToBarcodeESS()">Barcode ESS</button>
+    <button class="popup-button" onclick="goToESSOnline()" style="background-color: #27ae60;">ESS Online(input SPL)</button> 
+    <button class="popup-button" onclick="goToLaporanSales()">Laporan Sales</button>
+    <button class="popup-button" onclick="goToSoProdsus()">So Prodsus</button>
+    <button class="popup-button" style="background-color: #e67e22;" onclick="goToCetakSoProdsus()">Cetak So Prodsus</button>
+    <button class="popup-button" onclick="goToLaporanProdsus()">Laporan Prodsus</button> 
+    <button class="popup-button" onclick="goToKonversiBuah()">Konversi Buah Potong</button>
+    <button class="popup-button" onclick="goToEditFoto()">Edit Foto</button>
+</div>
+
+    </div>
+    
+    <img src="https://upload.wikimedia.org/wikipedia/commons/9/9d/Logo_Indomaret.png" alt="Logo Indomaret">
+    <h1>STOCK OPNAME IDM T3EI</h1>
+    <div></div> 
+  </div>
+  <div class="header-bg"><div class="color-red"></div><div class="color-blue"></div><div class="color-yellow"></div></div>
+
+  <div class="container">
+    <h2 class="section-title">Input Data Stok Sistem (Multi-Baris)</h2>
+    <div class="input-form">
+      <textarea id="dataInput" placeholder="Contoh format baru:&#10;01| Dancow Fortigro Susu ... Instant 780g&#10;      10006259 | Rp 100.200 | STOK: 3&#10;____________________________________&#10;..."></textarea><br>
+      
+      <input type="text" id="soTitleInput" placeholder="Masukkan Judul Stock Opname (mis: SO Susu Bubuk)" 
+             style="width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 10px;"
+             onblur="updateSoTitle(this.value)">
+      <div class="controls-row">
+        <button class="small" onclick="addData()">Tambah Stok</button>
+        <button class="small download-btn" style="background:#e74c3c;" onclick="resetStok()">Reset Stok Sistem</button>
+        <button class="small download-btn" id="restoreButton" style="background:#f1c40f; display:none;" onclick="restoreData()">Pulihkan Data</button>
+        <button class="small" onclick="fillExample()">Isi Contoh 5 Barang</button>
+      </div>
+    </div>
+
+    <h2 class="section-title">Import Data Stok Sistem (XLSX / TXT)</h2>
+    <div class="controls-row">
+      <input type="file" id="fileInput" accept=".xlsx, .xls, .txt, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" />
+    </div>
+
+    <h2 class="section-title">Pencarian</h2>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Cari berdasarkan PLU atau Nama Barang... (ketik lalu tunggu)" />
+    </div>
+
+    <h2 class="section-title" id="currentSoTitleDisplay"></h2> <h2 class="section-title with-controls">
+        Data Stok Fisik
+        <div class="stok-controls-group">
+            <div class="stok-option-container">
+                <button class="stok-split-btn active" id="btnStokToko" onclick="setStokTarget('toko')">Stok Toko</button>
+                <div id="statusToko" class="stok-status-label">aktif</div>
+            </div>
+            <div class="stok-option-container">
+                <button class="stok-split-btn" id="btnStokGudang" onclick="setStokTarget('gudang')">Stok Gudang</button>
+                <div id="statusGudang" class="stok-status-label"></div>
+            </div>
+        </div>
+    </h2>
+    <table id="stokTable" role="table" aria-label="Tabel stok fisik">
+      <thead>
+        <tr>
+          <th>No</th><th>PLU</th><th>Nama Barang</th><th>Harga</th><th>Stok Sistem</th>
+          <th>Stok Fisik</th><th>Selisih QTY</th><th>Selisih Rupiah</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div style="text-align:center; margin-top:12px;">
+      <button class="download-btn" onclick="downloadXLSX('stokTable','Semua_Data_Stock_Opname.xlsx')">Download Semua Data (XLSX)</button>
+      <button class="download-btn" style="background:#e67e22; padding: 8px 12px; font-size: 0.95rem;" onclick="saveHistory()">Simpan History SO</button>
+      <button class="download-btn" style="background:#9b59b6; padding: 8px 12px; font-size: 0.95rem;" onclick="showHistoryModal()">Lihat History SO</button>
+    </div>
+  </div>
+
+  <div class="container" id="selisihContainer" style="display:none;">
+    <h2 class="section-title">Item Selisih</h2> <h3 style="margin-top:0">Item Minus</h3>
+    <table id="selisihMinusTable">
+      <thead><tr><th>No</th><th>PLU</th><th>Nama Barang</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih QTY</th><th>Selisih Rupiah</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <h3 style="margin-top:18px">Item Plus</h3>
+    <table id="selisihPlusTable">
+      <thead><tr><th>No</th><th>PLU</th><th>Nama Barang</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih QTY</th><th>Selisih Rupiah</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="total-box" id="totalMinus">Total Rupiah Minus: Rp 0</div>
+    <div class="total-box" id="totalPlus">Total Rupiah Plus: Rp 0</div>
+    <div class="total-box" id="totalAll">Total Selisih Rupiah: Rp 0</div>
+
+    <div style="text-align:center; margin-top:12px;">
+      <button class="download-btn" onclick="downloadSelisih()">Download Data Selisih (XLSX)</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <div id="stokDetailModal" class="modal">
+      <div class="modal-content">
+          <span class="close" onclick="document.getElementById('stokDetailModal').style.display='none';">&times;</span>
+          <h3>Rincian Stok Barang</h3>
+          <p>Nama Barang: <strong id="modalNamaBarang"></strong></p>
+          <p>PLU: <strong id="modalPLU"></strong></p>
+          <hr>
+          <p>Stok Toko: <strong id="modalStokToko"></strong></p>
+          <p>Stok Gudang: <strong id="modalStokGudang"></strong></p>
+          <p>Total Stok Fisik: <strong id="modalStokTotal"></strong></p>
+      </div>
+  </div>
+
+  <div id="historyModal" class="modal">
+      <div class="modal-content" style="max-width: 500px;">
+          <span class="close" onclick="document.getElementById('historyModal').style.display='none';">&times;</span>
+          <h3>History Stock Opname</h3>
+          <p id="historyModalInstruction">Pilih data History SO untuk dimuat ke tabel utama.</p>
+          <div id="historyList">Memuat history...</div>
+          
+          <div id="deleteHistoryContainer" class="controls-row" style="margin-top: 15px; justify-content: start;">
+            <p style="margin: 0; font-size: 0.9em; font-weight: bold; color: #e74c3c; white-space: nowrap;">Hapus History:</p>
+            <select id="deleteHistorySelect" style="padding: 5px; flex-grow: 1; margin-right: 5px;"></select>
+            <button class="small download-btn" style="background:#e74c3c; margin: 0; white-space: nowrap;" onclick="confirmDeleteHistory()">Hapus</button>
+          </div>
+          </div>
+  </div>
+
+  <script>
+    // ===================================================================================
+    // ☁️ FIREBASE CLOUD CONFIGURATION & INIT ☁️ (GANTI DENGAN KODE ANDA)
+    // ===================================================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyDlaMjPJDQPQMZMTPSLDOuI_j47kKJEJmSWK", 
+        authDomain: "barcode-qscv.firebaseapp.com",
+        databaseURL: "https://barcode-qscv-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "barcode-qscv",
+        storageBucket: "barcode-qscv.appspot.com",
+        messagingSenderId: "204134538515",
+        appId: "1:204134538515:web:394a3880ced41726950eeb"
+    };
+
+    let allItems = [];
+    let tempData = []; 
+    let database;
+    let stockOpnameRef;
+    let historyRef; 
+    let currentStokTarget = 'toko'; 
+    let currentSoTitle = 'Stock Opname Umum'; 
+
+    try {
+        firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+        // Menggunakan ref parent untuk menyimpan list dan title bersamaan
+        stockOpnameRef = database.ref('stock_opname'); 
+        historyRef = database.ref('stock_opname/history'); 
+    } catch (e) {
+        console.error("FIREBASE ERROR: Gagal menginisialisasi Firebase.", e);
+        alert("⚠️ Error Cloud: Gagal terhubung ke database. Data tidak akan tersinkronisasi. Mohon cek koneksi dan konfigurasi Anda.");
+    }
+
+    // Fungsi untuk menyimpan data ke Cloud (Diperbarui)
+    function saveToCloud() {
+      if (!database || !stockOpnameRef) return;
+      
+      const itemsToStore = allItems.map(({ selisihQty, selisihRp, ...rest }) => ({
+          ...rest,
+          stokToko: rest.stokToko || 0,
+          stokGudang: rest.stokGudang || 0,
+          stokFisik: (rest.stokToko || 0) + (rest.stokGudang || 0) 
+      }));
+
+      // Update untuk menyimpan list dan title
+      stockOpnameRef.update({
+          list: itemsToStore,
+          title: currentSoTitle
+      })
+      .then(() => { console.log("Data berhasil disimpan ke Cloud."); })
+      .catch((error) => { console.error("Gagal menyimpan ke Cloud:", error); });
+    }
+
+    // Fungsi untuk memuat data dari Cloud (Diperbarui)
+    function loadFromCloud() {
+      if (!database || !stockOpnameRef) return;
+      // Fetch the root node to get both the list and the title
+      stockOpnameRef.once('value')
+        .then((snapshot) => {
+          const cloudData = snapshot.val() || {};
+          
+          // Load Title
+          currentSoTitle = cloudData.title || 'Stock Opname Umum';
+          soTitleInputEl.value = currentSoTitle;
+          
+          // Load Items
+          const data = cloudData.list; 
+
+          if (data && Array.isArray(data)) {
+            allItems = data.map(item => ({
+                ...item,
+                stokToko: Number(item.stokToko) || 0,
+                stokGudang: Number(item.stokGudang) || 0,
+                stokFisik: (Number(item.stokToko) || 0) + (Number(item.stokGudang) || 0)
+            }));
+          } else {
+            allItems = []; 
+          }
+          renderTable(); 
+          updateTitleDisplay(); // Update semua tampilan judul
+        })
+        .catch((error) => {
+          console.error("Gagal memuat data dari Cloud:", error);
+          alert("Gagal memuat data dari Cloud. Menggunakan data kosong/awal.");
+          renderTable();
+          updateTitleDisplay();
+        });
+    }
+    // ===================================================================================
+    // AKHIR FIREBASE CLOUD CONFIGURATION
+    // ===================================================================================
+    
+    // DOM
+    const tableBody = document.querySelector('#stokTable tbody');
+    const selisihMinusBody = document.querySelector('#selisihMinusTable tbody');
+    const selisihPlusBody = document.querySelector('#selisihPlusTable tbody');
+    const selisihContainer = document.getElementById('selisihContainer');
+    const totalMinusEl = document.getElementById('totalMinus');
+    const totalPlusEl = document.getElementById('totalPlus');
+    const totalAllEl = document.getElementById('totalAll');
+    const searchInput = document.getElementById('searchInput');
+    const restoreButton = document.getElementById('restoreButton');
+    const dataInputEl = document.getElementById('dataInput'); 
+    const soTitleInputEl = document.getElementById('soTitleInput'); 
+    const currentSoTitleDisplayEl = document.getElementById('currentSoTitleDisplay'); 
+    const stokDetailModal = document.getElementById('stokDetailModal');
+    const historyModal = document.getElementById('historyModal');
+    const historyList = document.getElementById('historyList');
+    const deleteHistorySelectEl = document.getElementById('deleteHistorySelect'); 
+
+
+    // Helper untuk format Rupiah
+    function formatRupiah(number) {
+        return 'Rp ' + (Number(number) || 0).toLocaleString('id-ID');
+    }
+
+    // --- FUNGSI NAVIGASI YANG ADA ---
+    function toggleMenuPopup() {
+        var popup = document.getElementById('menuPopup');
+        if (popup.style.display === 'none' || popup.style.display === '') {
+            popup.style.display = 'block';
+        } else {
+            popup.style.display = 'none';
+        }
+    }
+    function goToLaporanSales() { window.location.href = 'laporan_sales.html'; }
+    function goToSoProdsus() { window.location.href = 'so_prodsus.html'; }
+    function goToCetakSoProdsus() { 
+    window.location.href = 'cetak_so_prodsus.html'; 
+}
+    function goToLaporanProdsus() { window.location.href = 'laporan_prodsus.html'; }
+    function goToEditFoto() { window.location.href = 'edit_foto.html'; }
+    function goToBarcodeESS() { window.location.href = 'barcode_ess.html'; }
+    function goToESSOnline() { 
+    window.location.href = 'https://portal.hrindomaret.com/'; // Link ESS Online Indomaret
+}
+function goToKonversiBuah() { 
+    window.location.href = 'konversi_buah.html'; 
+}
+    document.addEventListener('click', function(event) {
+        var menuBtn = document.querySelector('.menu-button');
+        var popup = document.getElementById('menuPopup');
+        var isClickInside = menuBtn.contains(event.target) || popup.contains(event.target);
+        if (!isClickInside && popup.style.display === 'block') {
+            popup.style.display = 'none';
+        }
+    });
+    // --- AKHIR FUNGSI NAVIGASI ---
+
+    // NEW FUNCTION: Update title variable and save it
+    function updateSoTitle(newTitle) {
+        if (!newTitle || newTitle.trim() === '') {
+            currentSoTitle = 'Stock Opname Umum';
+        } else {
+            currentSoTitle = newTitle.trim();
+        }
+        soTitleInputEl.value = currentSoTitle; // Ensure input reflects the sanitized title
+        updateTitleDisplay();
+        saveToCloud(); 
+    }
+
+    // NEW FUNCTION: Update all visible title elements
+    function updateTitleDisplay() {
+        const titleText = currentSoTitle || 'Stock Opname Umum';
+        currentSoTitleDisplayEl.textContent = `SO Produk: ${titleText}`;
+    }
+
+    // FUNGSI BARU: Untuk memperbarui nilai input di tabel sesuai target stok aktif
+    function updateTableInputValues() {
+        const targetKey = currentStokTarget === 'toko' ? 'stokToko' : 'stokGudang';
+        
+        // Loop melalui data item
+        allItems.forEach(item => {
+            // Temukan input field berdasarkan PLU
+            const inputElement = document.querySelector(`#stokTable input[data-plu="${escapeJs(item.plu)}"]`);
+            if (inputElement) {
+                const newValue = item[targetKey] || '';
+                // Set nilai input field ke stok yang aktif (Toko atau Gudang)
+                inputElement.value = newValue;
+            }
+        });
+    }
+
+    // Fungsi baru untuk menentukan target input stok (Diperbarui untuk status "aktif")
+    function setStokTarget(target) {
+        currentStokTarget = target;
+        
+        const btnToko = document.getElementById('btnStokToko');
+        const btnGudang = document.getElementById('btnStokGudang');
+        const statusToko = document.getElementById('statusToko');
+        const statusGudang = document.getElementById('statusGudang');
+
+        btnToko.classList.remove('active');
+        btnGudang.classList.remove('active');
+        statusToko.textContent = '';
+        statusGudang.textContent = '';
+        
+        if (target === 'toko') {
+            btnToko.classList.add('active');
+            statusToko.textContent = 'aktif';
+        } else {
+            btnGudang.classList.add('active');
+            statusGudang.textContent = 'aktif';
+        }
+        
+        // Panggil fungsi untuk memperbarui semua nilai input di tabel
+        updateTableInputValues(); 
+    }
+
+    // Tambah data manual (Diperbarui untuk inisialisasi Stok Toko/Gudang)
+    function addData() {
+  const rawInput = dataInputEl.value;
+  // Memecah teks menjadi baris-baris
+  const lines = rawInput.split('\n').map(line => line.trim()).filter(line => line !== '');
+  
+  const parsedItems = [];
+  let tempNama = "";
+
+  lines.forEach(line => {
+    // Deteksi Baris Nama (Contoh: 01| Marjan Syrup...)
+    if (line.match(/^\d{1,}\|/)) {
+      tempNama = line.split('|').slice(1).join('|').trim();
+    } 
+    // Deteksi Baris Data PLU (Contoh: | 10000704 | Rp 23.400 | STOK:16)
+    else if (line.includes('|') && line.match(/\d{8,}/)) {
+      const pluMatch = line.match(/\d{8,}/);
+      const hargaMatch = line.match(/Rp\s*([\d\.,]+)/i);
+      const stokMatch = line.match(/STOK:?\s*(\d+)/i);
+      
+      if (pluMatch && tempNama) {
+        parsedItems.push({
+          plu: String(pluMatch[0]),
+          nama: tempNama,
+          harga: hargaMatch ? Number(hargaMatch[1].replace(/[^\d]/g, '')) : 0,
+          stokSistem: stokMatch ? Number(stokMatch[1]) : 0,
+          stokFisik: 0, 
+          stokToko: 0, 
+          stokGudang: 0
+        });
+        tempNama = ""; // Reset nama agar siap untuk item berikutnya
+      }
+    }
+  });
+
+  if (parsedItems.length > 0) {
+    const existingPlu = new Set(allItems.map(item => String(item.plu).trim()));
+    const newItems = parsedItems.filter(item => !existingPlu.has(item.plu));
+    
+    allItems = allItems.concat(newItems);
+    renderTable(); // Ini akan memicu updateAll() dan memunculkan tabel selisih
+    saveToCloud();
+    dataInputEl.value = '';
+    alert(`✅ Berhasil menambah ${newItems.length} item baru.`);
+  } else {
+    alert("⚠️ Format tidak terbaca. Pastikan ada baris Nama dan baris PLU.");
+  }
+}
+
+
+    // contoh isi (opsional)
+    function fillExample(){
+      const example = [
+        "01| Dancow Fortigro Susu ... Instant 780g",
+        "      10006259 | Rp 100.200 | STOK: 3",
+        "____________________________________",
+        "02| Diabetasol Susu Formula ... Vanila 170G",
+        "      10000578 | Rp 51.700 | STOK: 2",
+        "____________________________________",
+        "03| Entrasol Gold Susu ... Vanila 2X280g",
+        "      20087580 | Rp 115.600 | STOK: 4",
+        "____________________________________",
+        "04| Zee Susu Bubuk ... Chocolate 340G",
+        "      20027848 | Rp 49.900 | STOK: 4",
+        "____________________________________",
+        "05| Halim Rokok Filter 20'S",
+        "      20045093 | Rp 27.400 | STOK: 2"
+      ].join('\n');
+      
+      dataInputEl.value = example; 
+    }
+
+    // reset -> hapus semua data stok sistem
+    function resetStok(){
+      tempData = JSON.parse(JSON.stringify(allItems)); 
+      allItems = [];
+      currentSoTitle = 'Stock Opname Umum'; // Reset title
+      soTitleInputEl.value = currentSoTitle; // Reset title input
+      updateTitleDisplay(); // Update display
+      renderTable();
+      selisihMinusBody.innerHTML = '';
+      selisihPlusBody.innerHTML = '';
+      selisihContainer.style.display = 'none';
+      totalMinusEl.textContent = 'Total Rupiah Minus: Rp 0';
+      totalPlusEl.textContent = 'Total Rupiah Plus: Rp 0';
+      totalAllEl.textContent = 'Total Selisih Rupiah: Rp 0';
+      const fileInput = document.getElementById('fileInput');
+      if(fileInput) fileInput.value = '';
+      saveToCloud(); 
+      if(tempData.length > 0) {
+        restoreButton.style.display = 'block';
+      }
+    }
+
+    // Fungsi untuk memulihkan data 
+    function restoreData(){
+      allItems = JSON.parse(JSON.stringify(tempData));
+      renderTable();
+      restoreButton.style.display = 'none';
+      saveToCloud(); 
+    }
+
+    // render main table 
+    function renderTable(){
+      tableBody.innerHTML = '';
+      allItems.forEach((it, index)=>{
+        // Tentukan nilai awal yang ditampilkan di input field (sesuai target aktif)
+        const displayValue = currentStokTarget === 'toko' ? it.stokToko : it.stokGudang; 
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td onclick="showStokDetail('${escapeJs(it.plu)}')" title="Klik untuk lihat rincian stok">${escapeHtml(String(it.plu))}</td>
+          <td onclick="showStokDetail('${escapeJs(it.plu)}')" title="Klik untuk lihat rincian stok">${escapeHtml(String(it.nama))}</td>
+          <td>${formatRupiah(it.harga)}</td>
+          <td>${escapeHtml(String(it.stokSistem))}</td>
+          <td class="stok-fisik-cell">
+            <input type="text" data-plu="${escapeJs(it.plu)}" inputmode="numeric" 
+                   value="${displayValue || ''}" onblur="updateFisik('${escapeJs(it.plu)}', this)">
+          </td>
+          <td class="selisih-qty"></td>
+          <td class="selisih-rp"></td>
+        `;
+        tableBody.appendChild(tr);
+      });
+      updateAll();
+    }
+    
+    // Fungsi baru untuk menampilkan detail stok (pop-up)
+    function showStokDetail(plu) {
+        const pluKey = String(plu).trim();
+        const item = allItems.find(i => String(i.plu).trim() === pluKey);
+        if (!item) return;
+
+        document.getElementById('modalNamaBarang').textContent = item.nama;
+        document.getElementById('modalPLU').textContent = item.plu;
+        document.getElementById('modalStokToko').textContent = item.stokToko || 0;
+        document.getElementById('modalStokGudang').textContent = item.stokGudang || 0;
+        document.getElementById('modalStokTotal').textContent = item.stokFisik || 0;
+        
+        stokDetailModal.style.display = 'block';
+    }
+
+    // update stok fisik (Diperbarui untuk menyimpan ke stokToko atau stokGudang dan memperbarui nilai input)
+    function updateFisik(plu, inputEl){
+      const pluKey = String(plu).trim();
+      const item = allItems.find(i => String(i.plu).trim() === pluKey);
+      if(!item) return;
+      
+      const parts = String(inputEl.value || '').split(/[^0-9]+/).map(v => parseInt(v.trim()) || 0);
+      const inputTotal = parts.reduce((a,b)=>a+b, 0); 
+
+      // Simpan ke properti yang aktif
+      if (currentStokTarget === 'toko') {
+          item.stokToko = inputTotal;
+      } else {
+          item.stokGudang = inputTotal;
+      }
+
+      // Hitung ulang total stok fisik
+      item.stokFisik = (item.stokToko || 0) + (item.stokGudang || 0);
+
+      // KOLOM INPUT HANYA MENAMPILKAN NILAI DARI TARGET AKTIF
+      inputEl.value = inputTotal || ''; 
+      
+      updateAll(); // Update selisih dan total
+      saveToCloud(); 
+    }
+
+    // Tutup modal jika user klik di luar area modal
+    window.onclick = function(event) {
+        if (event.target == stokDetailModal) {
+            stokDetailModal.style.display = "none";
+        }
+        if (event.target == historyModal) {
+            historyModal.style.display = "none";
+        }
+    }
+    // update selisih, tabel minus/plus, totals, urutan & simpan array untuk export (Diperbarui)
+    function updateAll(){
+      selisihMinusBody.innerHTML = '';
+      selisihPlusBody.innerHTML = '';
+      let totalMinusRp = 0, totalPlusRp = 0;
+      let anySelisih = false;
+      const minusItems = [], plusItems = [];
+      
+      // Update Judul Selisih
+      const titleText = currentSoTitle || 'Stock Opname Umum';
+      const selisihHeader = document.querySelector('#selisihContainer h2.section-title');
+      if (selisihHeader) {
+          selisihHeader.textContent = `Item Selisih (${titleText})`;
+      }
+      
+      allItems.forEach(item => {
+        // Hitung ulang stokFisik dari komponen Toko + Gudang
+        item.stokFisik = (item.stokToko || 0) + (item.stokGudang || 0);
+
+        const qty = (Number(item.stokFisik) || 0) - (Number(item.stokSistem) || 0);
+        const rp = qty * (Number(item.harga) || 0);
+        item.selisihQty = qty;
+        item.selisihRp = rp;
+
+        if (qty !== 0) {
+          anySelisih = true;
+          if (qty < 0) { totalMinusRp += rp; minusItems.push(item); }
+          else { totalPlusRp += rp; plusItems.push(item); }
+        }
+      });
+      
+      [...tableBody.rows].forEach(tr => {
+        const pluCell = tr.cells[1] && tr.cells[1].textContent ? tr.cells[1].textContent.trim() : '';
+        const item = allItems.find(i => String(i.plu).trim() === pluCell);
+        if (item) {
+          const qcell = tr.querySelector('.selisih-qty');
+          const rcell = tr.querySelector('.selisih-rp');
+          qcell.textContent = item.selisihQty;
+          rcell.textContent = formatRupiah(item.selisihRp); 
+          qcell.className = 'selisih-qty';
+          rcell.className = 'selisih-rp';
+          if (item.selisihQty < 0) { qcell.classList.add('selisih-negatif'); rcell.classList.add('selisih-negatif'); }
+          else if (item.selisihQty > 0) { qcell.classList.add('selisih-positif'); rcell.classList.add('selisih-positif'); }
+        }
+      });
+
+      minusItems.sort((a,b) => Math.abs(b.selisihRp) - Math.abs(a.selisihRp));
+      plusItems.sort((a,b) => Math.abs(b.selisihRp) - Math.abs(a.selisihRp));
+      
+      minusItems.forEach((r, i) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(r.plu)}</td><td>${escapeHtml(r.nama)}</td><td>${escapeHtml(r.stokSistem)}</td><td>${escapeHtml(r.stokFisik)}</td><td>${escapeHtml(r.selisihQty)}</td><td>${formatRupiah(r.selisihRp)}</td>`; 
+        selisihMinusBody.appendChild(row);
+      });
+      plusItems.forEach((r, i) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(r.plu)}</td><td>${escapeHtml(r.nama)}</td><td>${escapeHtml(r.stokSistem)}</td><td>${escapeHtml(r.stokFisik)}</td><td>${escapeHtml(r.selisihQty)}</td><td>${formatRupiah(r.selisihRp)}</td>`; 
+        selisihPlusBody.appendChild(row);
+      });
+
+      selisihContainer.style.display = anySelisih ? 'block' : 'none';
+      totalMinusEl.textContent = 'Total Rupiah Minus: ' + formatRupiah(totalMinusRp);
+      totalPlusEl.textContent  = 'Total Rupiah Plus: ' + formatRupiah(totalPlusRp);
+      totalAllEl.textContent   = 'Total Selisih Rupiah: ' + formatRupiah(totalMinusRp + totalPlusRp);
+
+      window._minusItems = minusItems;
+      window._plusItems = plusItems;
+      window._totalMinusRp = totalMinusRp;
+      window._totalPlusRp = totalPlusRp;
+      
+      saveToCloud(); 
+    }
+
+    // Pencarian: menyembunyikan/menampilkan baris
+    function performSearch(){
+      const q = (searchInput.value || '').toString().trim().toLowerCase();
+      const rows = document.querySelectorAll('#stokTable tbody tr');
+      let visibleCount = 0;
+      rows.forEach(tr => {
+        if(tr.cells.length > 2) {
+            const plu = tr.cells[1].textContent.trim().toLowerCase();
+            const name = tr.cells[2].textContent.trim().toLowerCase();
+            const isMatch = plu.includes(q) || name.includes(q);
+            tr.style.display = isMatch ? '' : 'none';
+            
+            if (isMatch) {
+                tr.cells[0].textContent = ++visibleCount;
+            }
+        }
+      });
+    }
+
+    // attach search listener (debounce kecil)
+    let _searchTimer = null;
+    searchInput.addEventListener('input', function(){
+      if(_searchTimer) clearTimeout(_searchTimer);
+      _searchTimer = setTimeout(() => { performSearch(); _searchTimer = null; }, 150);
+    });
+    // ===================================================================================
+    // ✨ FUNGSI UTAMA IMPORT FILE (XLSX, XLS, TXT) YANG DIPERBAIKI ✨
+    // ===================================================================================
+    
+    // FUNGSI UNTUK MEMPROSES TXT 
+    /* --- BAGIAN YANG DIPERBAIKI PADA FUNGSI IMPOR TXT/DOC --- */
+
+function parseTxtData(text) {
+    const parsedItems = [];
+    const lines = text.split('\n');
+    
+    let currentNama = "";
+    const existingPlu = new Set(allItems.map(item => String(item.plu).trim()));
+
+    for (const line of lines) {
+        const cleanLine = line.trim();
+        if (cleanLine === '' || cleanLine.startsWith('===')) continue;
+
+        // 1. Deteksi Baris Nama (Contoh: 01| Marjan Syrup...)
+        if (cleanLine.match(/^\d{1,}\|/)) {
+            currentNama = cleanLine.split('|').slice(1).join('|').trim();
+        } 
+        // 2. Deteksi Baris Data (Contoh: | 10000704 | 23.400 | STOK: 16)
+        else if (cleanLine.includes('|') && cleanLine.toUpperCase().includes('STOK')) {
+            const columns = cleanLine.split('|').map(c => c.trim());
+            
+            // Berdasarkan file .doc Anda:
+            // Kolom 1 (index 1) adalah PLU
+            // Kolom 2 (index 2) adalah Harga Rupiah
+            const rawPLU = columns[1] ? columns[1].replace(/[^\d]/g, '') : "";
+            const rawHarga = columns[2] ? columns[2].replace(/[^\d]/g, '') : "0";
+            const stokMatch = cleanLine.match(/STOK:\s*(\d+)/i);
+            
+            if (rawPLU && currentNama && !existingPlu.has(rawPLU)) {
+                parsedItems.push({
+                    plu: rawPLU,
+                    nama: currentNama,
+                    harga: Number(rawHarga) || 0, // Mengambil harga dari kolom tengah
+                    stokSistem: stokMatch ? Number(stokMatch[1]) : 0,
+                    stokFisik: 0,
+                    stokToko: 0,
+                    stokGudang: 0
+                });
+                existingPlu.add(rawPLU);
+                currentNama = ""; // Reset setelah berhasil diproses
+            }
+        }
+    }
+    return parsedItems;
+}
+
+
+    // Fungsi untuk memproses file XLSX
+    function processXLSX(data, existingPlu) {
+    const workbook = XLSX.read(data, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    // Gunakan raw: true agar angka tidak otomatis terformat oleh Excel
+    const rows = XLSX.utils.sheet_to_json(worksheet, { raw: true, defval: "" });
+    
+    const newItems = [];
+    if (rows.length === 0) return newItems;
+
+    const originalKeys = Object.keys(rows[0]);
+    
+    // Cari key kolom berdasarkan nama
+    const oPluKey = originalKeys.find(k => k.toLowerCase().includes('plu') || k.toLowerCase().includes('kode'));
+    const oNamaKey = originalKeys.find(k => k.toLowerCase().includes('nama') || k.toLowerCase().includes('deskripsi'));
+    const oHargaKey = originalKeys.find(k => k.toLowerCase().includes('harga') || k.toLowerCase().includes('rp'));
+    const oStokKey = originalKeys.find(k => k.toLowerCase().includes('stok') || k.toLowerCase().includes('qty') || k.toLowerCase().includes('sistem'));
+
+    rows.forEach(r => {
+        // Ambil nilai mentah dan bersihkan dari karakter non-angka untuk PLU dan Harga
+        let rawPlu = String(r[oPluKey] || "").replace(/[^\d]/g, '').trim();
+        let rawHarga = String(r[oHargaKey] || "").replace(/[^\d]/g, '').trim();
+        
+        // Validasi: Jika PLU dan Harga tertukar (Harga biasanya lebih pendek dari PLU 8 digit)
+        if (rawPlu.length < 5 && rawHarga.length >= 8) {
+            let temp = rawPlu;
+            rawPlu = rawHarga;
+            rawHarga = temp;
+        }
+
+        if (rawPlu && !existingPlu.has(rawPlu)) {
+            newItems.push({
+                plu: rawPlu,
+                nama: String(r[oNamaKey] || 'Tanpa Nama').trim(),
+                harga: Number(rawHarga) || 0,
+                stokSistem: Number(r[oStokKey]) || 0,
+                stokFisik: 0,
+                stokToko: 0, 
+                stokGudang: 0 
+            });
+            existingPlu.add(rawPlu);
+        }
+    });
+    return newItems;
+}
+
+
+
+
+    document.getElementById('fileInput').addEventListener('change', handleFile, false);
+
+    function handleFile(e){
+      const file = e.target.files[0];
+      if(!file) return;
+      
+      const fileName = file.name.toLowerCase();
+      const existingPlu = new Set(allItems.map(item => String(item.plu).trim()));
+      let newItems = [];
+
+      const reader = new FileReader();
+
+      reader.onload = function(ev){
+        try {
+            if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                const data = new Uint8Array(ev.target.result);
+                newItems = processXLSX(data, existingPlu);
+            } else if (fileName.endsWith('.txt')) {
+                const text = ev.target.result;
+                newItems = parseTxtData(text, existingPlu);
+            } else {
+                alert('Format file tidak didukung. Harap unggah file XLSX, XLS, atau TXT.');
+                return;
+            }
+
+            if (newItems.length > 0) {
+                allItems = allItems.concat(newItems);
+                renderTable();
+                saveToCloud();
+                alert(`✅ ${newItems.length} item baru berhasil diimpor.`);
+            } else if (allItems.length === 0) {
+                alert('⚠️ Tidak ada item unik yang ditemukan atau diimpor. Periksa format file Anda.');
+            } else {
+                alert('ℹ️ Semua item dari file yang diunggah sudah ada dalam data stok.');
+            }
+
+        } catch (error) {
+            console.error("Error saat memproses file:", error);
+            alert(`⚠️ Error saat mengimpor: ${error.message || "Pastikan file tidak korup dan format header (PLU, Nama, Harga, Stok) sudah benar."}`);
+        } finally {
+            e.target.value = ''; // Reset input file
+        }
+      };
+
+      if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+          reader.readAsArrayBuffer(file);
+      } else if (fileName.endsWith('.txt')) {
+          reader.readAsText(file);
+      } else {
+          e.target.value = '';
+      }
+    }
+    // ===============================================================
+    // FUNGSI HISTORY SO (CLOUDSAVE) - DIPERBARUI
+    // ===============================================================
+
+    // Simpan data SO saat ini sebagai history (Diperbarui)
+    function saveHistory() {
+        if (!historyRef) {
+            alert("⚠️ Error Cloud: Gagal terhubung ke database.");
+            return;
+        }
+        if (allItems.length === 0) {
+            alert("Tidak ada data untuk disimpan.");
+            return;
+        }
+
+        const timestamp = new Date().toISOString();
+        const historyKey = timestamp.replace(/[:.]/g, '-');
+        
+        // Simpan data utama (tanpa selisihRp/Qty)
+        const dataToSave = allItems.map(({ selisihQty, selisihRp, ...rest }) => rest);
+        
+        historyRef.child(historyKey).set({
+            timestamp: timestamp,
+            itemCount: dataToSave.length,
+            title: currentSoTitle, 
+            data: dataToSave
+        })
+        .then(() => {
+            alert(`✅ History SO (${currentSoTitle}) berhasil disimpan: ${new Date(timestamp).toLocaleString('id-ID')}`);
+        })
+        .catch((error) => {
+            console.error("Gagal menyimpan History SO ke Cloud:", error);
+            alert("⚠️ Gagal menyimpan History SO. Mohon cek koneksi.");
+        });
+    }
+
+    // Tampilkan modal daftar history SO (Diperbarui)
+    function showHistoryModal() {
+        if (!historyRef) {
+            alert("⚠️ Error Cloud: Gagal terhubung ke database.");
+            return;
+        }
+
+        historyList.innerHTML = 'Memuat history...';
+        deleteHistorySelectEl.innerHTML = ''; // Clear delete dropdown
+        historyModal.style.display = 'block';
+
+        historyRef.once('value')
+        .then((snapshot) => {
+            const historyData = snapshot.val();
+            historyList.innerHTML = '';
+            
+            if (!historyData) {
+                historyList.innerHTML = '<p>Tidak ada data history yang tersimpan.</p>';
+                deleteHistorySelectEl.innerHTML = '<option value="">Tidak ada history</option>';
+                return;
+            }
+
+            // Urutkan berdasarkan timestamp terbaru
+            const keys = Object.keys(historyData).sort().reverse();
+            
+            keys.forEach(key => {
+                const entry = historyData[key];
+                const title = entry.title || 'SO Umum'; 
+                
+                // Add to List (Muat Data)
+                const button = document.createElement('button');
+                button.textContent = `${new Date(entry.timestamp).toLocaleString('id-ID')} | ${title} (${entry.itemCount} Item)`;
+                button.onclick = () => loadHistory(key);
+                historyList.appendChild(button);
+
+                // Add to Delete Dropdown
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = `${new Date(entry.timestamp).toLocaleString('id-ID')} - ${title}`;
+                deleteHistorySelectEl.appendChild(option);
+            });
+        })
+        .catch((error) => {
+            console.error("Gagal memuat History SO:", error);
+            historyList.innerHTML = '<p style="color:red;">Gagal memuat data history.</p>';
+        });
+    }
+
+    // Muat data history SO yang dipilih kembali ke tabel utama (Diperbarui)
+    function loadHistory(key) {
+        if (!historyRef) return;
+
+        if (!confirm(`Yakin ingin memuat data History SO ini? Data di tabel utama saat ini akan diganti.`)) {
+            return;
+        }
+
+        historyRef.child(key).once('value')
+        .then((snapshot) => {
+            const entry = snapshot.val();
+            if (entry && entry.data) {
+                // Load Title
+                currentSoTitle = entry.title || 'Stock Opname Umum';
+                soTitleInputEl.value = currentSoTitle;
+                updateTitleDisplay();
+                
+                // Load Items
+                allItems = entry.data.map(item => ({
+                    ...item,
+                    stokToko: Number(item.stokToko) || 0,
+                    stokGudang: Number(item.stokGudang) || 0,
+                    stokFisik: (Number(item.stokToko) || 0) + (Number(item.stokGudang) || 0)
+                }));
+                renderTable();
+                saveToCloud(); // Simpan data history yang baru dimuat sebagai data utama saat ini
+                historyModal.style.display = 'none';
+                alert(`✅ History SO berhasil dimuat ke tabel utama.`);
+            } else {
+                alert("⚠️ Data history tidak valid.");
+            }
+        })
+        .catch((error) => {
+            console.error("Gagal memuat History SO:", error);
+            alert("⚠️ Gagal memuat data history.");
+        });
+    }
+
+    // Fungsi konfirmasi hapus history (NEW)
+    function confirmDeleteHistory() {
+        const keyToDelete = deleteHistorySelectEl.value;
+        if (!keyToDelete || deleteHistorySelectEl.options.length === 0 || deleteHistorySelectEl.options[0].value === "") {
+            alert('Pilih history yang ingin dihapus terlebih dahulu.');
+            return;
+        }
+
+        const selectedText = deleteHistorySelectEl.options[deleteHistorySelectEl.selectedIndex].textContent;
+
+        if (confirm(`Yakin ingin menghapus History SO:\n"${selectedText}"? Aksi ini tidak bisa dibatalkan.`)) {
+            deleteHistory(keyToDelete);
+        }
+    }
+
+    // Fungsi hapus history (NEW)
+    function deleteHistory(key) {
+        if (!historyRef) return;
+        historyRef.child(key).remove()
+        .then(() => {
+            alert('✅ History SO berhasil dihapus.');
+            showHistoryModal(); // Refresh the modal
+        })
+        .catch((error) => {
+            console.error("Gagal menghapus History SO:", error);
+            alert("⚠️ Gagal menghapus History SO. Mohon cek koneksi.");
+        });
+    }
+    
+    // Download semua data (Diperbarui untuk filenaming)
+    function downloadXLSX(tableId, filename){
+      const title = (currentSoTitle || 'StockOpname').replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s/g, '_'); // Sanitize for filename
+      const finalFilename = `${title}_Semua_Data.xlsx`;
+      
+      const table = document.getElementById(tableId);
+      const rowsToExport = [...table.querySelectorAll('tbody tr')].filter(tr => tr.style.display !== 'none');
+      
+      // Ambil data dari allItems untuk mendapatkan stokToko/Gudang yang tersembunyi
+      const dataToExport = [['No', 'PLU', 'Nama Barang', 'Harga', 'Stok Sistem', 'Stok Fisik TOTAL', 'Stok Toko', 'Stok Gudang', 'Selisih QTY', 'Selisih Rupiah']];
+      
+      rowsToExport.forEach((row, index) => {
+          const cells = [...row.cells];
+          const plu = cells[1].textContent.trim();
+          const item = allItems.find(i => String(i.plu).trim() === plu);
+          
+          if (item) {
+              const hargaClean = cells[3].textContent.replace('Rp', '').replace(/\./g, '').trim();
+              const selisihRpText = cells[7].textContent.replace('Rp', '').replace(/\./g, '').trim();
+              
+              const rowData = [
+                  index + 1,
+                  item.plu,
+                  item.nama,
+                  Number(hargaClean), 
+                  item.stokSistem,
+                  item.stokFisik,
+                  item.stokToko, 
+                  item.stokGudang, 
+                  item.selisihQty,
+                  Number(selisihRpText) 
+              ];
+              dataToExport.push(rowData);
+          }
+      });
+      
+      const ws = XLSX.utils.aoa_to_sheet(dataToExport);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Stock Opname");
+      XLSX.writeFile(wb, finalFilename);
+    }
+
+    // Download selisih (Diperbarui untuk filenaming)
+    function downloadSelisih(){
+      const title = (currentSoTitle || 'StockOpname').replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s/g, '_'); // Sanitize for filename
+      const finalFilename = `${title}_Data_Selisih.xlsx`;
+      
+      const minus = window._minusItems || [];
+      const plus = window._plusItems || [];
+      const totalMinus = window._totalMinusRp || 0;
+      const totalPlus = window._totalPlusRp || 0;
+
+      const aoa = [];
+      aoa.push([`=== ITEM MINUS (${currentSoTitle}) ===`]);
+      aoa.push(["No","PLU","Nama Barang","Stok Sistem","Stok Fisik","Stok Toko","Stok Gudang","Selisih QTY","Selisih Rupiah"]);
+      minus.forEach((r, i) => aoa.push([i+1, r.plu, r.nama, r.stokSistem, r.stokFisik, r.stokToko, r.stokGudang, r.selisihQty, r.selisihRp]));
+      aoa.push([]);
+      aoa.push(["Total Rupiah Minus","","","","","","", totalMinus]);
+      aoa.push([]);
+      aoa.push([`=== ITEM PLUS (${currentSoTitle}) ===`]);
+      aoa.push(["No","PLU","Nama Barang","Stok Sistem","Stok Fisik","Stok Toko","Stok Gudang","Selisih QTY","Selisih Rupiah"]);
+      plus.forEach((r, i) => aoa.push([i+1, r.plu, r.nama, r.stokSistem, r.stokFisik, r.stokToko, r.stokGudang, r.selisihQty, r.selisihRp]));
+      aoa.push([]);
+      aoa.push(["TOTAL SELISIH RUPIAH","","","","","","", totalMinus + totalPlus]);
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Data Selisih");
+      XLSX.writeFile(wb, finalFilename);
+    }
+
+    // helper: escape HTML to avoid XSS in table rendering
+    function escapeHtml(str){
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    // helper to escape JS string used in inline onblur attribute
+    function escapeJs(s){
+      return String(s).replace(/'/g,"\\'");
+    }
+
+    // 1. Muat data dari Cloud saat aplikasi dimulai
+    loadFromCloud();
+    setStokTarget('toko'); 
+    
+  </script>
+</body>
+</html>
