@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BARCODE ESS T3EI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        /* CSS ASLI [barcode_ess.html] */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 0; }
+        header { background-color: #007bff; color: white; padding: 10px 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); display: flex; align-items: center; justify-content: space-between; }
+        header h1 { margin: 0; font-size: 1.8em; color: white; font-family: 'Oswald', sans-serif; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2); flex-grow: 1; }
+        .header-separator { border: 0; height: 3px; background-image: linear-gradient(to right, #007bff, #17a2b8, #007bff); margin: 0 0 20px 0; }
+        .logo-indomaret { height: 35px; background-color: white; padding: 3px 8px; border-radius: 4px; }
+        main { padding: 20px; max-width: 900px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.1); }
+        .employee-item { display: block; padding: 12px 20px; margin-bottom: 8px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .employee-item:hover { background-color: #e9ecef; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        .modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 8px; }
+        
+        /* LAYAR LOGIN */
+        .auth-container { max-width: 400px; margin: 50px auto; text-align: center; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .admin-table { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-top: 20px; }
+        .admin-table td, th { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-warning { background-color: #ffc107; color: #212529; }
+    </style>
+</head>
+<body>
+
+<div id="login-ui" class="auth-container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/9/9d/Logo_Indomaret.png" style="height:50px; margin-bottom:10px;">
+    <h2 style="color:#007bff">Login Barcode ESS</h2>
+    <input type="text" id="user-inp" placeholder="Username / Kode Toko">
+    <input type="password" id="pass-inp" placeholder="Password">
+    <div style="text-align: left; font-size: 0.9em; margin-bottom: 15px;">
+        <input type="checkbox" onclick="toggleLoginPass()"> Lihat Password
+    </div>
+    <button onclick="checkLogin()" style="width:100%;">MASUK</button>
+    <div style="margin-top: 15px; font-size: 0.85em;">
+        <a href="#" onclick="lupaPassword()">Lupa Password?</a> | <a href="#" onclick="registerToko()">Daftar Toko</a>
+    </div>
+</div>
+
+<div id="main-ui" style="display:none;">
+    <header>
+        <h1>BARCODE ESS T3EI</h1>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Logo_Indomaret.svg/1200px-Logo_Indomaret.svg.png" class="logo-indomaret">
+    </header>
+    <hr class="header-separator">
+    <main>
+        <div style="display:flex; justify-content: space-between; margin-bottom: 10px;">
+            <button onclick="logout()" class="btn-danger">Logout</button>
+            <button id="btn-user-pass" onclick="userEditPass()" class="btn-warning">Ubah Password Toko</button>
+        </div>
+
+        <div id="admin-only-section" style="display:none; margin-top:20px; border:2px solid #007bff; padding:15px; border-radius:8px; background-color: #f0f7ff;">
+            <h3>Admin: Kelola Toko & Hapus User</h3>
+            <div id="admin-user-list"></div>
+        </div>
+
+        <section id="employee-list-section">
+            <h2 id="display-nama">Daftar Karyawan</h2>
+            <div id="employee-list-container">Memuat data...</div>
+        </section>
+
+        <section id="add-employee-section">
+            <button onclick="toggleForm()">Tambah Karyawan ➕</button>
+            <div id="add-employee-form" style="display:none; padding:15px; border:1px solid #ccc; border-radius:4px; margin-top:10px;">
+                <h3>Formulir Tambah</h3>
+                <input type="text" id="new-nama" placeholder="Nama Lengkap">
+                <input type="text" id="new-nik" placeholder="NIK">
+                <input type="text" id="new-password" placeholder="Password ESS">
+                <button onclick="addEmployee()">Simpan Karyawan</button>
+            </div>
+        </section>
+
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <span style="float:right; cursor:pointer; font-size:24px;" onclick="closeModal()">&times;</span>
+                <h3>Detail Barcode</h3>
+                <div id="barcode-display" style="text-align:center;">
+                    <div id="qrcode-nik" style="display: flex; justify-content: center;"></div>
+                    <p>NIK: <strong id="data-nik"></strong></p>
+                    <div id="qrcode-password" style="display: flex; justify-content: center;"></div>
+                    <p>Password: <strong id="data-password"></strong></p>
+                </div>
+                <hr>
+                <h4>Edit / Hapus Data Karyawan</h4>
+                <input type="hidden" id="edit-index">
+                <input type="text" id="edit-nama" placeholder="Nama">
+                <input type="text" id="edit-nik" placeholder="NIK">
+                <input type="text" id="edit-password" placeholder="Password">
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="saveEdit()" style="flex: 1;">Update</button>
+                    <button onclick="deleteEmp()" class="btn-danger" style="flex: 1;">Hapus Karyawan</button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDlaMjPJDQPQMZMTPSLDOuI_j47kKJEJmSWK",
+        authDomain: "barcode-qscv.firebaseapp.com",
+        databaseURL: "https://barcode-qscv-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "barcode-qscv",
+        storageBucket: "barcode-qscv.appspot.com",
+        messagingSenderId: "204134538515",
+        appId: "1:204134538515:web:394a3880ced41726950eeb"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let employees = [];
+    let currentToko = "";
+    let isAdmin = false;
+
+    // AUTO LOGIN
+    window.onload = function() {
+        const u = localStorage.getItem('ess_user');
+        const p = localStorage.getItem('ess_pass');
+        if(u && p) {
+            document.getElementById('user-inp').value = u;
+            document.getElementById('pass-inp').value = p;
+            checkLogin(true);
+        }
+    };
+
+    function checkLogin(isAuto = false) {
+        const u = document.getElementById('user-inp').value.trim().toUpperCase();
+        const p = document.getElementById('pass-inp').value.trim();
+
+        if(u === "DWI22" && p === "2205") {
+            isAdmin = true;
+            currentToko = "ADMIN";
+            startSession(u, p);
+            document.getElementById('admin-only-section').style.display = 'block';
+            loadAdminUserList();
+        } else {
+            db.ref('users/' + u).once('value', s => {
+                if(s.exists() && s.val().password == p) {
+                    isAdmin = false;
+                    currentToko = u;
+                    startSession(u, p);
+                } else if(!isAuto) { alert("Username atau Password Salah!"); }
+            });
+        }
+    }
+
+    function startSession(u, p) {
+        localStorage.setItem('ess_user', u);
+        localStorage.setItem('ess_pass', p);
+        document.getElementById('login-ui').style.display = 'none';
+        document.getElementById('main-ui').style.display = 'block';
+        document.getElementById('display-nama').innerText = "Toko: " + u;
+        loadEmployees();
+    }
+
+    function loadEmployees() {
+        if(currentToko === "ADMIN") {
+            document.getElementById('employee-list-container').innerHTML = "Pilih toko di bawah untuk mengelola karyawan.";
+            return;
+        }
+        db.ref('karyawan/' + currentToko).on('value', s => {
+            employees = s.val() || [];
+            renderList();
+        });
+    }
+
+    function renderList() {
+        const container = document.getElementById('employee-list-container');
+        container.innerHTML = '';
+        employees.forEach((emp, i) => {
+            const div = document.createElement('div');
+            div.className = 'employee-item';
+            div.innerHTML = `${i+1}. ${emp.nama}`;
+            div.onclick = () => showModal(i);
+            container.appendChild(div);
+        });
+    }
+
+    function showModal(i) {
+        const emp = employees[i];
+        document.getElementById('qrcode-nik').innerHTML = '';
+        document.getElementById('qrcode-password').innerHTML = '';
+        new QRCode(document.getElementById('qrcode-nik'), { text: emp.nik, width: 120, height: 120 });
+        new QRCode(document.getElementById('qrcode-password'), { text: emp.password, width: 120, height: 120 });
+        
+        document.getElementById('data-nik').textContent = emp.nik;
+        document.getElementById('data-password').textContent = isAdmin ? emp.password : "********";
+        
+        document.getElementById('edit-index').value = i;
+        document.getElementById('edit-nama').value = emp.nama;
+        document.getElementById('edit-nik').value = emp.nik;
+        document.getElementById('edit-password').value = emp.password;
+        document.getElementById('modal').style.display = 'block';
+    }
+
+    // CRUD KARYAWAN
+    function addEmployee() {
+        const n = document.getElementById('new-nama').value;
+        const nk = document.getElementById('new-nik').value;
+        const p = document.getElementById('new-password').value;
+        if(n && nk && p) {
+            employees.push({nama:n, nik:nk, password:p});
+            db.ref('karyawan/'+currentToko).set(employees);
+            document.getElementById('new-nama').value = '';
+            document.getElementById('new-nik').value = '';
+            document.getElementById('new-password').value = '';
+            toggleForm();
+        } else { alert("Isi semua kolom!"); }
+    }
+
+    function saveEdit() {
+        const i = document.getElementById('edit-index').value;
+        employees[i] = {
+            nama: document.getElementById('edit-nama').value,
+            nik: document.getElementById('edit-nik').value,
+            password: document.getElementById('edit-password').value
+        };
+        db.ref('karyawan/'+currentToko).set(employees);
+        closeModal();
+    }
+
+    function deleteEmp() {
+        if(confirm("Hapus karyawan ini dari daftar?")) {
+            employees.splice(document.getElementById('edit-index').value, 1);
+            db.ref('karyawan/'+currentToko).set(employees);
+            closeModal();
+        }
+    }
+
+    // PANEL ADMIN: KELOLA USER
+    function loadAdminUserList() {
+        db.ref('users').on('value', s => {
+            let h = `<table class="admin-table"><tr><th>Kode Toko</th><th>Password</th><th>Aksi</th></tr>`;
+            s.forEach(c => {
+                h += `<tr>
+                    <td><strong>${c.key}</strong></td>
+                    <td>${c.val().password}</td>
+                    <td>
+                        <button onclick="adminEditUser('${c.key}','${c.val().password}')" class="btn-warning" style="padding:4px 8px; font-size:11px;">Edit</button>
+                        <button onclick="adminDeleteUser('${c.key}')" class="btn-danger" style="padding:4px 8px; font-size:11px;">Hapus User</button>
+                        <button onclick="currentToko='${c.key}'; loadEmployees();" style="background:green; padding:4px 8px; font-size:11px;">Lihat Karyawan</button>
+                    </td></tr>`;
+            });
+            document.getElementById('admin-user-list').innerHTML = h + `</table>`;
+        });
+    }
+
+    function adminEditUser(oldK, oldP) {
+        const nk = prompt("Masukkan Kode Toko Baru:", oldK).toUpperCase();
+        const np = prompt("Masukkan Password Baru:", oldP);
+        if(nk && np) {
+            if(nk !== oldK) {
+                db.ref('users/'+oldK).remove();
+                db.ref('karyawan/'+oldK).once('value', s => {
+                    if(s.exists()) db.ref('karyawan/'+nk).set(s.val());
+                    db.ref('karyawan/'+oldK).remove();
+                });
+            }
+            db.ref('users/'+nk).set({password: np});
+        }
+    }
+
+    // FITUR HAPUS USER (ADMIN ONLY)
+    function adminDeleteUser(kode) {
+        if(confirm(`PERINGATAN: Hapus User ${kode} beserta seluruh data karyawannya secara permanen?`)) {
+            db.ref('users/' + kode).remove();
+            db.ref('karyawan/' + kode).remove();
+            alert(`User ${kode} telah dihapus.`);
+        }
+    }
+
+    function userEditPass() {
+        const p = prompt("Masukkan Password Baru untuk Toko Anda:");
+        if(p) db.ref('users/'+currentToko).update({password: p}).then(() => {
+            localStorage.setItem('ess_pass', p);
+            alert("Password toko berhasil diubah!");
+        });
+    }
+
+    // UI UTILITY
+    function toggleForm() { 
+        const f = document.getElementById('add-employee-form');
+        f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+    function logout() { localStorage.clear(); location.reload(); }
+    function toggleLoginPass() { const x = document.getElementById("pass-inp"); x.type = x.type === "password" ? "text" : "password"; }
+    function lupaPassword() { const u = prompt("Masukkan Kode Toko Anda:"); if(u) window.open(`https://wa.me/62881081001922?text=Lupa%20Password%20Barcode%20ESS%20Toko:%20${u}`); }
+    function registerToko() {
+        const k = prompt("Masukkan Kode Toko Baru:").toUpperCase();
+        const p = prompt("Masukkan Password Toko:");
+        if(k && p) {
+            db.ref('users/'+k).once('value', s => {
+                if(s.exists()) { alert("Kode Toko sudah terdaftar!"); }
+                else { db.ref('users/'+k).set({password: p}).then(() => alert("Toko Berhasil Didaftarkan!")); }
+            });
+        }
+    }
+</script>
+</body>
+</html>
