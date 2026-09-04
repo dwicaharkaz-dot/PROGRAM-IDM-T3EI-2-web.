@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Laporan Harian Indomaret</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header-bg {
+            background: linear-gradient(to right, #dc1e28 33.33%, #0056b3 33.33%, #0056b3 66.66%, #ffd700 66.66%);
+            height: 8px;
+            width: 100%;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: #fff;
+            padding: 30px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .header {
+            text-align: center;
+            position: relative;
+            margin-bottom: 20px;
+            padding-top: 15px;
+        }
+        .header h1 {
+            color: #dc1e28;
+            margin: 0;
+            font-size: 1.8em;
+            padding-top: 50px;
+        }
+        .logo {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            height: 40px;
+            width: auto;
+        }
+        hr {
+            border: 0;
+            height: 2px;
+            background-color: #dc1e28;
+            margin: 15px 0;
+        }
+        .top-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .btn-back {
+            background-color: #f1c40f; 
+            color: #333;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-menu {
+            background-color: #17a2b8;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .input-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #444;
+            font-size: 0.9em;
+        }
+        /* Style baru untuk label dengan tombol kecil */
+        .label-with-btn {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-tiny {
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75em;
+            font-weight: normal;
+            transition: 0.2s;
+        }
+        .btn-tiny:hover {
+            background-color: #138496;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 0.9em;
+            box-sizing: border-box;
+        }
+        .section-title {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9f9f9;
+            padding: 10px;
+            border-left: 4px solid #0056b3;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .section-title h3 {
+            margin: 0;
+            font-size: 1em;
+            color: #0056b3;
+        }
+        .btn-auto-fill {
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: 0.3s;
+        }
+        .btn-auto-fill:hover {
+            background-color: #004494;
+        }
+        .reset-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .reset-button {
+            padding: 6px 10px;
+            background-color: #dc1e28;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 0.8em;
+        }
+        .reset-button:hover {
+            background-color: #a01a24;
+        }
+        .reset-note {
+            font-size: 0.7em;
+            color: #888;
+            margin-top: 3px;
+        }
+        .result {
+            font-weight: bold;
+            color: #dc1e28;
+        }
+        .format-box {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 8px;
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .format-box h2 {
+            margin-top: 0;
+            color: #0056b3;
+            font-size: 1.2em;
+        }
+        .format-box ul {
+            list-style-type: none;
+            padding: 0;
+            font-size: 0.9em;
+        }
+        .format-box li {
+            margin-bottom: 8px;
+        }
+        .format-text {
+            white-space: pre-wrap;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+        .copy-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 8px 12px;
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background-color 0.3s ease;
+        }
+        .copy-button:hover {
+            background-color: #004494;
+        }
+        .save-button {
+            display: block;
+            width: 150px;
+            margin: 20px auto 0;
+            padding: 10px;
+            background-color: #008c45;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-align: center;
+        }
+        .save-button:hover {
+            background-color: #006b35;
+        }
+        
+        /* Modal & Table Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            width: 95%;
+            max-width: 700px;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: #0056b3;
+            font-size: 1.4em;
+        }
+        .close-modal {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #888;
+        }
+        .close-modal:hover {
+            color: #dc1e28;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.85em;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        .data-table th {
+            background-color: #0056b3;
+            color: white;
+        }
+        .btn-small {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            color: white;
+            font-size: 0.8em;
+            margin: 2px;
+        }
+        .btn-edit { background-color: #f39c12; }
+        .btn-delete { background-color: #e74c3c; }
+        
+        .manual-form {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .manual-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-bg"></div>
+    <div class="header">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/9/9d/Logo_Indomaret.png" alt="Indomaret Logo" class="logo">
+        <h1>Kalkulator Laporan Harian Indomaret</h1>
+    </div>
+
+    <div class="top-buttons">
+        <button class="btn-back" onclick="window.location.href='index.html'">
+            ← Kembali ke Stock Opname
+        </button>
+        <button class="btn-menu" onclick="openModal()">
+            📋 Menu Data Riwayat
+        </button>
+    </div>
+    
+    <hr>
+
+    <div class="input-section">
+        <div class="input-group">
+            <label for="current-date">Tanggal (Tgl/Bln):</label>
+            <input type="text" id="current-date" value="7/9" placeholder="Contoh: 7/9">
+        </div>
+        <div class="input-group">
+            <label for="days-in-month">Jumlah tgl dlm Bulan ini:</label>
+            <input type="text" id="days-in-month" value="30" inputmode="numeric" pattern="[0-9]*">
+        </div>
+        
+        <div class="input-group">
+            <label for="sales-net">Sales Net:</label>
+            <input type="text" id="sales-net" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('sales-net')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label class="label-with-btn" for="akm-sales-kemarin">
+                AKM Sales Kemarin: 
+                <button class="btn-tiny" onclick="autoFillAkm('sales')">⚡ Isi H-1</button>
+            </label>
+            <input type="text" id="akm-sales-kemarin" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('akm-sales-kemarin')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="struk">Struk:</label>
+            <input type="text" id="struk" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('struk')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label class="label-with-btn" for="akm-struk-kemarin">
+                AKM Struk Kemarin: 
+                <button class="btn-tiny" onclick="autoFillAkm('struk')">⚡ Isi H-1</button>
+            </label>
+            <input type="text" id="akm-struk-kemarin" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('akm-struk-kemarin')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="target-spd">Target SPD:</label>
+            <input type="text" id="target-spd" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('target-spd')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="target-total-sales">Target Total Sales Bulan Ini:</label>
+            <input type="text" id="target-total-sales" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('target-total-sales')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+
+        <!-- Section Data Pembanding Bulan Lalu -->
+        <div class="section-title">
+            <h3>Data Pembanding (Bulan Lalu)</h3>
+            <button class="btn-auto-fill" onclick="autoFillBulanLalu()">⚡ Isi Otomatis</button>
+        </div>
+
+        <div class="input-group">
+            <label for="spd-bln-lalu">SPD Bulan Lalu:</label>
+            <input type="text" id="spd-bln-lalu" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('spd-bln-lalu')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="struk-harian-bln-lalu">STD Bulan Lalu:</label>
+            <input type="text" id="struk-harian-bln-lalu" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('struk-harian-bln-lalu')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="apc-bln-lalu">APC Bulan Lalu:</label>
+            <input type="text" id="apc-bln-lalu" value="" inputmode="numeric" pattern="[0-9]*">
+            <div class="reset-container">
+                <button class="reset-button" ondblclick="resetInput('apc-bln-lalu')">Reset</button>
+                <span class="reset-note">klik 2 kali</span>
+            </div>
+        </div>
+    </div>
+    
+    <button class="save-button" onclick="saveData()">Simpan Data ke Cloud</button>
+
+    <hr>
+    
+    <div class="output-section">
+        <div class="format-box">
+            <h2>Laporan Format 1</h2>
+            <div id="format1-output"></div>
+        </div>
+        
+        <div class="format-box">
+            <h2>Laporan Format 2</h2>
+            <button class="copy-button" onclick="copyToClipboard()">Copy</button>
+            <pre class="format-text" id="format2-output"></pre>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL UNTUK MASTER DATA BULAN LALU & SEKARANG -->
+<div id="modalHistory" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <h2>Kelola Riwayat Harian</h2>
+        
+        <div class="manual-form">
+            <h3 style="margin-top: 0; font-size: 1em; color: #0056b3;" id="form-title">Tambah/Edit Data Harian</h3>
+            <div class="manual-grid">
+                <div class="input-group">
+                    <label>Bulan:</label>
+                    <input type="text" id="manual-month" placeholder="M" inputmode="numeric">
+                </div>
+                <div class="input-group">
+                    <label>Tanggal:</label>
+                    <input type="text" id="manual-day" placeholder="D" inputmode="numeric">
+                </div>
+                <div class="input-group">
+                    <label>SPD:</label>
+                    <input type="text" id="manual-spd" class="format-num" inputmode="numeric">
+                </div>
+                <div class="input-group">
+                    <label>STD:</label>
+                    <input type="text" id="manual-std" class="format-num" inputmode="numeric">
+                </div>
+                <div class="input-group">
+                    <label>APC:</label>
+                    <input type="text" id="manual-apc" class="format-num" inputmode="numeric">
+                </div>
+                <div class="input-group">
+                    <label>AKM Sales:</label>
+                    <input type="text" id="manual-akm-sales" class="format-num" inputmode="numeric">
+                </div>
+                <div class="input-group">
+                    <label>AKM Struk:</label>
+                    <input type="text" id="manual-akm-struk" class="format-num" inputmode="numeric">
+                </div>
+            </div>
+            <button class="btn-auto-fill" style="width: 100%; margin-top: 5px; background-color: #008c45;" onclick="saveManualRecord()">Simpan ke Riwayat</button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+            <h3 style="margin: 0; font-size: 1.1em; color: #333;">Tabel Data Harian</h3>
+            <select id="select-month" onchange="renderHistoryTable()" style="padding: 5px; border-radius: 4px;">
+                <option value="">Pilih Bulan</option>
+            </select>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tgl</th>
+                    <th>SPD</th>
+                    <th>STD</th>
+                    <th>APC</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="history-table-body">
+                <tr><td colspan="5">Memuat data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    const inputIds = [
+        'current-date', 'days-in-month', 'sales-net', 'akm-sales-kemarin', 
+        'struk', 'akm-struk-kemarin', 'target-spd', 'spd-bln-lalu', 'struk-harian-bln-lalu', 
+        'apc-bln-lalu', 'target-total-sales'
+    ];
+
+    // ===================================================================================
+    // ☁️ FIREBASE CLOUD CONFIGURATION & INIT ☁️
+    // ===================================================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyDlaMjPJDQPQMZMTPSLDOuI_j47kKJEJmSWK", 
+        authDomain: "barcode-qscv.firebaseapp.com",
+        databaseURL: "https://barcode-qscv-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "barcode-qscv",
+        storageBucket: "barcode-qscv.appspot.com",
+        messagingSenderId: "204134538515",
+        appId: "1:204134538515:web:394a3880ced41726950eeb"
+    };
+
+    let database;
+    let laporanSalesRef;     
+    let riwayatHarianRef;    
+
+    let historyDataCache = {}; 
+
+    try {
+        firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+        laporanSalesRef = database.ref('laporan_sales/data'); 
+        riwayatHarianRef = database.ref('laporan_sales/riwayat_harian'); 
+    } catch (e) {
+        console.error("FIREBASE ERROR: Gagal menginisialisasi Firebase.", e);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadMainData();
+        listenToHistory(); 
+
+        inputIds.forEach(id => {
+            const input = document.getElementById(id);
+            input.addEventListener('input', formatAndCalculate);
+        });
+
+        document.querySelectorAll('.format-num').forEach(input => {
+            input.addEventListener('input', formatInputOnly);
+        });
+
+        calculateAndDisplay();
+    });
+
+    // FUNGSI FORMATTING
+    function formatInputOnly(e) {
+        const value = e.target.value;
+        const cleanValue = value.replace(/\./g, '');
+        if (cleanValue === '') {
+            e.target.value = '';
+        } else {
+            const numberValue = parseFloat(cleanValue);
+            if (!isNaN(numberValue)) {
+                e.target.value = new Intl.NumberFormat('id-ID').format(numberValue);
+            }
+        }
+    }
+
+    function formatAndCalculate(e) {
+        const value = e.target.value;
+        const id = e.target.id;
+
+        if (id === 'current-date') {
+            const cleanValue = value.replace(/[^0-9/]/g, '');
+            e.target.value = cleanValue;
+            calculateAndDisplay();
+            return;
+        }
+
+        const cleanValue = value.replace(/\./g, '');
+        if (cleanValue === '') {
+            e.target.value = '';
+        } else {
+            const numberValue = parseFloat(cleanValue);
+            if (!isNaN(numberValue)) {
+                e.target.value = new Intl.NumberFormat('id-ID').format(numberValue);
+            }
+        }
+        calculateAndDisplay();
+    }
+
+    function formatNumber(num) {
+        if (isNaN(num)) return 0;
+        return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(num);
+    }
+    
+    function cleanAndParse(value) {
+        if (typeof value !== 'string' || value === '') return 0;
+        return parseFloat(value.replace(/\./g, '')) || 0;
+    }
+
+    // LOGIKA PERHITUNGAN UTAMA
+    function calculateAndDisplay() {
+        const dateInput = document.getElementById('current-date').value;
+        const dateParts = dateInput.split('/');
+        const currentDate = cleanAndParse(dateParts[0]);
+
+        const daysInMonth = cleanAndParse(document.getElementById('days-in-month').value);
+        const salesNet = cleanAndParse(document.getElementById('sales-net').value);
+        const akmSalesKemarin = cleanAndParse(document.getElementById('akm-sales-kemarin').value);
+        const struk = cleanAndParse(document.getElementById('struk').value);
+        const akmStrukKemarin = cleanAndParse(document.getElementById('akm-struk-kemarin').value);
+        const targetSpd = cleanAndParse(document.getElementById('target-spd').value);
+        const spdBlnLalu = cleanAndParse(document.getElementById('spd-bln-lalu').value);
+        const strukHarianBlnLalu = cleanAndParse(document.getElementById('struk-harian-bln-lalu').value);
+        const apcBlnLalu = cleanAndParse(document.getElementById('apc-bln-lalu').value);
+        const targetTotalSales = cleanAndParse(document.getElementById('target-total-sales').value);
+
+        const akmSales = salesNet + akmSalesKemarin;
+        const spd = currentDate > 0 ? akmSales / currentDate : 0;
+        const ach = targetSpd > 0 ? (spd * 100) / targetSpd : 0;
+        const growthSpd = spdBlnLalu > 0 ? ((spd - spdBlnLalu) / spdBlnLalu) * 100 : 0;
+        const akmStruk = akmStrukKemarin + struk;
+        const strukPerhari = currentDate > 0 ? akmStruk / currentDate : 0;
+        const growthStruk = strukHarianBlnLalu > 0 ? ((strukPerhari - strukHarianBlnLalu) / strukHarianBlnLalu) * 100 : 0;
+        const apc = strukPerhari > 0 ? spd / strukPerhari : 0;
+        const growthApc = apcBlnLalu > 0 ? ((apc - apcBlnLalu) / apcBlnLalu) * 100 : 0;
+        const totalSalesSdTgl = akmSales;
+        const achSales = targetTotalSales > 0 ? (totalSalesSdTgl * 100) / targetTotalSales : 0;
+        const kekuranganVsTarget = targetTotalSales - totalSalesSdTgl;
+        const sisaTgl = daysInMonth - currentDate;
+        const kekuranganPerHari = sisaTgl > 0 ? kekuranganVsTarget / sisaTgl : 0;
+
+        const output1 = `
+            <ul>
+                <li>Seles Net: <span class="result">Rp${formatNumber(salesNet)}</span></li>
+                <li>- AKM Seles: <span class="result">Rp${formatNumber(akmSales)}</span></li>
+                <li>- SPD: <span class="result">Rp${formatNumber(spd)}</span></li>
+                <li>- ACH: <span class="result">${formatNumber(ach)}%</span></li>
+                <li>SPD bulan lalu: <span class="result">Rp${formatNumber(spdBlnLalu)}</span></li>
+                <li>- Growth: <span class="result">${formatNumber(growthSpd)}%</span></li>
+                <li>Struk: <span class="result">${formatNumber(struk)}</span></li>
+                <li>- Akm struk: <span class="result">${formatNumber(akmStruk)}</span></li>
+                <li>- STD: <span class="result">${formatNumber(strukPerhari)}</span></li>
+                <li>STD bulan lalu: <span class="result">${formatNumber(strukHarianBlnLalu)}</span></li>
+                <li>- Growth: <span class="result">${formatNumber(growthStruk)}%</span></li>
+                <li>- APC: <span class="result">Rp${formatNumber(apc)}</span></li>
+                <li>APC bulan lalu: <span class="result">Rp${formatNumber(apcBlnLalu)}</span></li>
+                <li>- Growth: <span class="result">${formatNumber(growthApc)}%</span></li>
+            </ul>
+        `;
+        document.getElementById('format1-output').innerHTML = output1;
+
+        const output2 = `_LAPORAN SALES HARIAN TOKO_
+_Kode/Nama Toko:_ T3EI Taman Pondok Jati
+_Tgl:_ ${dateInput}
+_Sales Net:_ ${formatNumber(salesNet)}
+_Struk:_ ${formatNumber(struk)}
+_APC:_ ${formatNumber(apc)}
+
+_Target Akumulasi:_
+- _Target Total Sales:_ ${formatNumber(targetTotalSales)}
+- _Total Sales s/d tgl:_ ${formatNumber(totalSalesSdTgl)}
+- _Ach Sales:_ ${formatNumber(achSales)}%
+- _Kekurangan vs Target:_ ${formatNumber(kekuranganVsTarget)}
+- _Kekurangan per hari:_ ${formatNumber(kekuranganPerHari)}
+
+_Target SPD:_
+- _Target SPD:_ ${formatNumber(targetSpd)}
+- _Actual SPD:_ ${formatNumber(spd)}
+- _% Pencapaian SPD:_ ${formatNumber(ach)}%
+- _SPD Bulan lalu:_ ${formatNumber(spdBlnLalu)}
+- _Growth SPD:_ ${formatNumber(growthSpd)}%
+- _Growth Struk:_ ${formatNumber(growthStruk)}%
+- _Growth APC:_ ${formatNumber(growthApc)}%`;
+
+        document.getElementById('format2-output').textContent = output2;
+    }
+
+    function resetInput(id) {
+        document.getElementById(id).value = '';
+        calculateAndDisplay();
+    }
+    
+    function copyToClipboard() {
+        const outputText = document.getElementById('format2-output').textContent;
+        navigator.clipboard.writeText(outputText).then(() => {
+            alert('Laporan berhasil disalin ke clipboard!');
+        }).catch(err => {
+            console.error('Gagal menyalin teks: ', err);
+            alert('Gagal menyalin laporan.');
+        });
+    }
+
+    // ==========================================
+    // FUNGSI MANAGEMENT DATA CLOUD & RIWAYAT
+    // ==========================================
+    
+    function loadMainData() {
+        if (database && laporanSalesRef) {
+            laporanSalesRef.once('value').then((snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    inputIds.forEach(id => {
+                        if (data[id] !== undefined) document.getElementById(id).value = data[id];
+                    });
+                    calculateAndDisplay();
+                }
+            }).catch((e) => console.error("Gagal memuat data utama:", e));
+        }
+    }
+
+    function saveData() {
+        const data = {};
+        inputIds.forEach(id => {
+            data[id] = document.getElementById(id).value;
+        });
+        
+        if (database && laporanSalesRef) {
+            laporanSalesRef.set(data).then(() => { 
+                saveToHistoryAutomated(); 
+                alert('Data harian berhasil disimpan ke Cloud!'); 
+            }).catch(e => { alert('Gagal menyimpan: ' + e.message); });
+        } else {
+            alert('Gagal menyimpan. Koneksi Cloud bermasalah.');
+        }
+    }
+
+    // Hitung otomatis data hari ini dan simpan ke node riwayat
+    function saveToHistoryAutomated() {
+        const dateInput = document.getElementById('current-date').value;
+        const dateParts = dateInput.split('/');
+        const day = parseInt(dateParts[0]);
+        const month = parseInt(dateParts[1]);
+
+        if(!day || !month) return; 
+
+        const salesNet = cleanAndParse(document.getElementById('sales-net').value);
+        const akmSalesKemarin = cleanAndParse(document.getElementById('akm-sales-kemarin').value);
+        const struk = cleanAndParse(document.getElementById('struk').value);
+        const akmStrukKemarin = cleanAndParse(document.getElementById('akm-struk-kemarin').value);
+
+        const akmSales = salesNet + akmSalesKemarin;
+        const spd = day > 0 ? akmSales / day : 0;
+        const akmStruk = akmStrukKemarin + struk;
+        const strukPerhari = day > 0 ? akmStruk / day : 0;
+        const apc = strukPerhari > 0 ? spd / strukPerhari : 0;
+
+        riwayatHarianRef.child(`${month}/${day}`).set({
+            spd: spd,
+            std: strukPerhari,
+            apc: apc,
+            akmSales: akmSales, // Simpan AKM Sales HARI INI
+            akmStruk: akmStruk  // Simpan AKM Struk HARI INI
+        });
+    }
+
+    // ==========================================
+    // FUNGSI ISI OTOMATIS
+    // ==========================================
+
+    function autoFillBulanLalu() {
+        const dateInput = document.getElementById('current-date').value;
+        const dateParts = dateInput.split('/');
+        const day = parseInt(dateParts[0]);
+        let month = parseInt(dateParts[1]);
+
+        if(!day || !month) {
+            alert("Format tanggal salah! Gunakan format Tanggal/Bulan (contoh: 7/9)");
+            return;
+        }
+
+        let lastMonth = month - 1;
+        if(lastMonth === 0) lastMonth = 12;
+
+        if (historyDataCache[lastMonth] && historyDataCache[lastMonth][day]) {
+            const data = historyDataCache[lastMonth][day];
+            document.getElementById('spd-bln-lalu').value = formatNumber(data.spd);
+            document.getElementById('struk-harian-bln-lalu').value = formatNumber(data.std);
+            document.getElementById('apc-bln-lalu').value = formatNumber(data.apc);
+            calculateAndDisplay();
+        } else {
+            alert(`Peringatan: Data riwayat bulan lalu untuk Tgl ${day} Bln ${lastMonth} kosong!`);
+        }
+    }
+
+    // Ambil Data AKM H-1 dari riwayat
+    function autoFillAkm(type) {
+        const dateInput = document.getElementById('current-date').value;
+        const dateParts = dateInput.split('/');
+        const day = parseInt(dateParts[0]);
+        const month = parseInt(dateParts[1]);
+
+        if (!day || !month) {
+            alert("Format tanggal salah! Gunakan format Tanggal/Bulan");
+            return;
+        }
+
+        // Jika tanggal 1, AKM kemarin selalu mereset (0)
+        if (day === 1) {
+            if (type === 'sales') document.getElementById('akm-sales-kemarin').value = "0";
+            if (type === 'struk') document.getElementById('akm-struk-kemarin').value = "0";
+            calculateAndDisplay();
+            return;
+        }
+
+        const prevDay = day - 1;
+        
+        if (historyDataCache[month] && historyDataCache[month][prevDay]) {
+            const data = historyDataCache[month][prevDay];
+            
+            if (type === 'sales') {
+                if(data.akmSales !== undefined) {
+                    document.getElementById('akm-sales-kemarin').value = formatNumber(data.akmSales);
+                } else {
+                    alert(`Data AKM Sales tanggal ${prevDay} tidak ditemukan di database. Pastikan data tersebut sudah pernah disimpan.`);
+                }
+            } else if (type === 'struk') {
+                if(data.akmStruk !== undefined) {
+                    document.getElementById('akm-struk-kemarin').value = formatNumber(data.akmStruk);
+                } else {
+                    alert(`Data AKM Struk tanggal ${prevDay} tidak ditemukan di database.`);
+                }
+            }
+            calculateAndDisplay();
+        } else {
+            alert(`Data riwayat untuk H-1 (Tanggal ${prevDay}/${month}) belum ada di database!`);
+        }
+    }
+
+    // ==========================================
+    // LOGIKA MODAL RIWAYAT (EDIT/TAMBAH/HAPUS)
+    // ==========================================
+
+    function listenToHistory() {
+        if(database && riwayatHarianRef) {
+            riwayatHarianRef.on('value', snapshot => {
+                historyDataCache = snapshot.val() || {};
+                populateMonthSelect();
+                renderHistoryTable();
+            });
+        }
+    }
+
+    function openModal() {
+        document.getElementById('modalHistory').style.display = 'flex';
+        renderHistoryTable();
+    }
+
+    function closeModal() {
+        document.getElementById('modalHistory').style.display = 'none';
+        
+        document.getElementById('manual-month').value = '';
+        document.getElementById('manual-day').value = '';
+        document.getElementById('manual-spd').value = '';
+        document.getElementById('manual-std').value = '';
+        document.getElementById('manual-apc').value = '';
+        document.getElementById('manual-akm-sales').value = '';
+        document.getElementById('manual-akm-struk').value = '';
+    }
+
+    function populateMonthSelect() {
+        const select = document.getElementById('select-month');
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">Pilih Bulan</option>';
+        
+        const months = Object.keys(historyDataCache).sort((a,b) => parseInt(b) - parseInt(a)); 
+        months.forEach(m => {
+            const option = document.createElement('option');
+            option.value = m;
+            option.text = `Bulan ${m}`;
+            select.appendChild(option);
+        });
+
+        if(months.includes(currentVal)) select.value = currentVal;
+        else if (months.length > 0) select.value = months[0]; 
+    }
+
+    function renderHistoryTable() {
+        const select = document.getElementById('select-month');
+        const month = select.value;
+        const tbody = document.getElementById('history-table-body');
+        tbody.innerHTML = '';
+
+        if(!month || !historyDataCache[month]) {
+            tbody.innerHTML = '<tr><td colspan="5">Belum ada data di bulan ini.</td></tr>';
+            return;
+        }
+
+        const days = Object.keys(historyDataCache[month]).sort((a,b) => parseInt(a) - parseInt(b)); 
+        
+        days.forEach(day => {
+            const data = historyDataCache[month][day];
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${day}/${month}</td>
+                <td>${formatNumber(data.spd)}</td>
+                <td>${formatNumber(data.std)}</td>
+                <td>${formatNumber(data.apc)}</td>
+                <td>
+                    <button class="btn-small btn-edit" onclick="editRecord('${month}', '${day}')">Edit</button>
+                    <button class="btn-small btn-delete" onclick="deleteRecord('${month}', '${day}')">Hps</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function saveManualRecord() {
+        const month = parseInt(document.getElementById('manual-month').value);
+        const day = parseInt(document.getElementById('manual-day').value);
+        const spd = cleanAndParse(document.getElementById('manual-spd').value);
+        const std = cleanAndParse(document.getElementById('manual-std').value);
+        const apc = cleanAndParse(document.getElementById('manual-apc').value);
+        const akmSales = cleanAndParse(document.getElementById('manual-akm-sales').value);
+        const akmStruk = cleanAndParse(document.getElementById('manual-akm-struk').value);
+
+        if(!month || !day) {
+            alert('Pastikan kolom Bulan dan Tanggal sudah diisi!');
+            return;
+        }
+
+        riwayatHarianRef.child(`${month}/${day}`).set({
+            spd: spd,
+            std: std,
+            apc: apc,
+            akmSales: akmSales,
+            akmStruk: akmStruk
+        }).then(() => {
+            alert(`Berhasil menyimpan data riwayat Tgl ${day}/${month}`);
+            // Bersihkan form setelah disave
+            document.getElementById('manual-day').value = '';
+            document.getElementById('manual-spd').value = '';
+            document.getElementById('manual-std').value = '';
+            document.getElementById('manual-apc').value = '';
+            document.getElementById('manual-akm-sales').value = '';
+            document.getElementById('manual-akm-struk').value = '';
+        }).catch(e => alert("Gagal menyimpan: " + e.message));
+    }
+
+    function editRecord(month, day) {
+        const data = historyDataCache[month][day];
+        document.getElementById('manual-month').value = month;
+        document.getElementById('manual-day').value = day;
+        document.getElementById('manual-spd').value = formatNumber(data.spd);
+        document.getElementById('manual-std').value = formatNumber(data.std);
+        document.getElementById('manual-apc').value = formatNumber(data.apc);
+        
+        if (data.akmSales !== undefined) document.getElementById('manual-akm-sales').value = formatNumber(data.akmSales);
+        else document.getElementById('manual-akm-sales').value = '';
+        
+        if (data.akmStruk !== undefined) document.getElementById('manual-akm-struk').value = formatNumber(data.akmStruk);
+        else document.getElementById('manual-akm-struk').value = '';
+    }
+
+    function deleteRecord(month, day) {
+        if(confirm(`Anda yakin ingin menghapus riwayat Tgl ${day} Bulan ${month}?`)) {
+            riwayatHarianRef.child(`${month}/${day}`).remove()
+                .then(() => console.log('Data terhapus'))
+                .catch(e => alert("Gagal menghapus: " + e.message));
+        }
+    }
+</script>
+
+</body>
+</html>
