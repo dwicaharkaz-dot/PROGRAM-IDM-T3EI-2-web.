@@ -1,0 +1,16 @@
+{
+  "name": "Portal Operasional Toko T3EI",
+  "short_name": "Portal T3EI",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#005eb8",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
