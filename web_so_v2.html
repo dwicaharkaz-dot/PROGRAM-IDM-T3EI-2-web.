@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stok Opname IDM</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Scanner Camera -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- JsBarcode -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <!-- SheetJS (Excel) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-boxes"></i> Stok Opname IDM</h1>
+        <div class="cloud-status" id="cloudStatus"><i class="fas fa-cloud text-orange"></i> Menghubungkan ke Cloud...</div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="openTab('tab-so', this)">MENU SO</button>
+            <div class="menu-dropdown-wrapper">
+                <button class="tab-btn" id="btnMainMenu" onclick="toggleMainMenu(event)"><i class="fas fa-bars"></i> MENU</button>
+                <div id="mainMenuDropdown" class="menu-dropdown">
+                    <button onclick="window.location.href='input_database.html'"><i class="fas fa-database"></i> Database</button>
+                    <button onclick="openHistoryModal()"><i class="fas fa-history"></i> History SO</button>
+                    <button onclick="openSortModal()"><i class="fas fa-sort-alpha-down"></i> Urutan Barang</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- TAB SO UTAMA (FISIK) -->
+        <div id="tab-so" class="tab-content active">
+            <div class="card bg-blue">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 10px;">
+                    <h3 style="margin: 0; border: none; padding: 0;"><i class="fas fa-barcode"></i> Aksi SO</h3>
+                    <button onclick="resetSO()" class="btn btn-red" style="margin: 0; padding: 5px 10px; font-size: 12px;"><i class="fas fa-trash-alt"></i> Reset SO</button>
+                </div>
+                
+                <label style="color:white; font-size:12px;">Panggil per Modis:</label>
+                <div style="display: flex; gap: 5px; margin-bottom:10px;">
+                    <select id="selectModisSO" style="margin:0; flex:1; padding:8px;"></select>
+                    <button onclick="addModisToSO()" class="btn btn-yellow" style="margin-top:0;"><i class="fas fa-download"></i> Tampilkan</button>
+                </div>
+
+                <button onclick="startCameraScanner()" class="btn btn-green" style="font-size: 14px; width: 100%; margin-bottom: 10px;">
+                    <i class="fas fa-camera"></i> Scan Barcode
+                </button>
+                <div id="reader" style="display:none; margin-bottom: 10px;"></div>
+                <button id="closeCameraBtn" onclick="stopCameraScanner()" class="btn btn-red" style="display:none; width: 100%; margin-bottom: 10px;">Tutup Kamera</button>
+
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="multiPluInput" placeholder="Input banyak PLU (koma)" style="margin:0; font-size: 12px;">
+                    <button onclick="addMultiplePlu()" class="btn btn-yellow" style="margin-top:0;">Tambah</button>
+                </div>
+
+                <input type="text" id="searchInput" placeholder="Cari Nama / PLU..." onkeyup="searchSO()" style="margin-top: 10px; font-size: 12px;">
+                <button onclick="openSistemView()" class="btn btn-yellow" style="width: 100%; font-size: 12px; margin-bottom: 5px;"><i class="fas fa-keyboard"></i> INPUT STOK SISTEM</button>
+                
+                <button onclick="openOptionInfo()" class="btn btn-blue" style="width: 100%; font-size: 12px; background: #0277bd;"><i class="fas fa-info-circle"></i> Petunjuk Penggunaan</button>
+            </div>
+
+            <div class="card p-small">
+                <h3 style="font-size: 14px; margin-bottom: 5px;">Daftar Item SO (Klik PLU untuk Detail)</h3>
+                <div class="table-responsive">
+                    <table id="tableSO">
+                        <thead>
+                            <tr><th>No</th><th>PLU</th><th>Nama Barang</th><th>Sis</th><th>Disp</th><th>Gud</th><th>Tot</th><th>Sls</th></tr>
+                        </thead>
+                        <tbody id="bodySO"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="split-tables">
+                <div class="card border-red p-small">
+                    <h3 class="text-red" style="font-size: 13px; margin:0 0 5px 0;">Minus (-)</h3>
+                    <div class="table-responsive">
+                        <table id="tableMinus" class="small-table">
+                            <thead><tr><th>No</th><th>PLU</th><th>Nama</th><th>Sls</th></tr></thead>
+                            <tbody id="bodyMinus"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card border-green p-small">
+                    <h3 class="text-green" style="font-size: 13px; margin:0 0 5px 0;">Plus (+)</h3>
+                    <div class="table-responsive">
+                        <table id="tablePlus" class="small-table">
+                            <thead><tr><th>No</th><th>PLU</th><th>Nama</th><th>Sls</th></tr></thead>
+                            <tbody id="bodyPlus"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="downloadExcel()" class="btn btn-blue" style="width: 100%; margin-top: 15px; font-size: 16px; padding: 12px;">
+                <i class="fas fa-file-excel"></i> Download Excel (.xlsx)
+            </button>
+        </div>
+
+        <!-- TAB KHUSUS INPUT STOK SISTEM -->
+        <div id="tab-sistem" class="tab-content">
+            <div class="card p-small">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3 style="margin:0; border:none; padding:0; font-size:14px; color:var(--blue);"><i class="fas fa-server"></i> Input Stok Sistem</h3>
+                    <button onclick="backFromSistemView()" class="btn btn-yellow" style="margin:0;"><i class="fas fa-arrow-left"></i> Kembali</button>
+                </div>
+                <input type="text" id="searchSistemInput" placeholder="Cari PLU / Nama Barang..." onkeyup="searchSistemTable()" style="margin-bottom:8px; font-size:12px;">
+                <div class="table-responsive">
+                    <table id="tableSistem">
+                        <thead>
+                            <tr><th>No</th><th>PLU</th><th>Nama Barang</th><th>Stok Sistem</th></tr>
+                        </thead>
+                        <tbody id="bodySistem"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL POPUP INPUT/DETAIL STOK DISPLAY & GUDANG (UKURAN LEBIH KECIL) -->
+    <div id="itemModal" class="modal">
+        <div class="modal-content modal-compact">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h3 id="modalTitle" style="color: var(--blue); margin-top:0; font-size: 13px; padding-right: 18px;">Detail Barang</h3>
+            <div id="modalSubTitle" style="font-size: 11px; color: #666; margin-bottom: 8px;"></div>
+            
+            <div class="modal-field">
+                <label>Stok Sistem:</label>
+                <input type="number" id="modalSistem" inputmode="numeric" class="modal-input" readonly style="background:#eee;">
+            </div>
+            <div class="modal-field">
+                <label>Stok Display (Fisik):</label>
+                <input type="number" id="modalDisplay" inputmode="numeric" class="modal-input" placeholder="Display">
+            </div>
+            <div class="modal-field">
+                <label>Stok Gudang (Fisik):</label>
+                <input type="number" id="modalGudang" inputmode="numeric" class="modal-input" placeholder="Gudang">
+            </div>
+
+            <div class="modal-summary" id="modalSummary">
+                Total Fisik: 0 | Selisih: 0
+            </div>
+
+            <button class="btn btn-blue" style="width:100%; margin-top: 8px; padding: 7px;" onclick="saveModalData()">Simpan & Tutup</button>
+        </div>
+    </div>
+
+    <!-- MODAL POPUP INPUT STOK SISTEM (BARCODE + ANGKA + AUTO SAVE) -->
+    <div id="sistemModal" class="modal">
+        <div class="modal-content modal-medium">
+            <span class="close-modal" onclick="closeSistemModal()" title="Simpan & Tutup">&times;</span>
+            <div id="sistemModalNama" style="font-weight:bold; color:var(--blue); font-size:13px; margin-bottom:6px; padding-right:20px;"></div>
+            <div style="text-align:center; background:#fff; padding:6px; border:1px solid #eee; border-radius:6px; margin-bottom:8px;">
+                <svg id="sistemBarcodeSvg"></svg>
+                <div id="sistemModalPluText" style="font-weight:bold; font-size:14px; letter-spacing:1px; color:#222;"></div>
+            </div>
+            <div class="modal-field" style="margin-bottom:8px;">
+                <label style="text-align:center;">Jumlah Stok Sistem:</label>
+                <input type="number" id="sistemModalInput" inputmode="numeric" pattern="[0-9]*" class="modal-input" placeholder="0" oninput="autoSaveSistemModal()">
+            </div>
+            <button class="btn btn-green" style="width:100%; font-size:13px; padding:9px;" onclick="nextSistemModalItem()">Lanjut <i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- MODAL NOTIFIKASI SCAN BARCODE TIDAK ADA DI DAFTAR SO -->
+    <div id="scanNotFoundModal" class="modal">
+        <div class="modal-content modal-compact" style="text-align:center;">
+            <h3 style="color:var(--red); margin-top:0; font-size:15px;"><i class="fas fa-exclamation-circle"></i> Item tidak masuk dalam menu SO</h3>
+            <p id="scanNotFoundInfo" style="font-size:12px; color:#444; margin:8px 0 14px 0;"></p>
+            <div style="display:flex; gap:8px; justify-content:center;">
+                <button class="btn btn-green" style="flex:1;" onclick="confirmAddScannedItem()">Tambahkan</button>
+                <button class="btn btn-red" style="flex:1;" onclick="skipScannedItem()">Lewati</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PILIHAN SIMPAN SEBELUM RESET SO -->
+    <div id="resetChoiceModal" class="modal">
+        <div class="modal-content modal-compact" style="text-align:center;">
+            <span class="close-modal" onclick="closeResetChoiceModal()">&times;</span>
+            <h3 style="color:var(--blue); margin-top:0; font-size:14px;">Simpan Hasil SO?</h3>
+            <p style="font-size:12px; color:#555; margin:8px 0 14px 0;">Apakah Anda ingin menyimpan data SO saat ini ke <b>History SO</b> sebelum melakukan reset?</p>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-green" style="flex:1;" onclick="proceedResetWithChoice(true)">Simpan</button>
+                <button class="btn btn-red" style="flex:1;" onclick="proceedResetWithChoice(false)">Tidak</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL HISTORY SO -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content" style="max-width:420px;">
+            <span class="close-modal" onclick="closeHistoryModal()">&times;</span>
+            <h3 style="color:var(--blue); margin-top:0; font-size:15px;"><i class="fas fa-history"></i> History SO</h3>
+            <div id="historyListContainer" style="max-height:60vh; overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL URUTAN BARANG -->
+    <div id="sortModal" class="modal">
+        <div class="modal-content modal-compact" style="text-align:center;">
+            <span class="close-modal" onclick="closeSortModal()">&times;</span>
+            <h3 style="color:var(--blue); margin-top:0; font-size:14px;"><i class="fas fa-sort"></i> Urutan Barang</h3>
+            <button class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="setSortOrder('plu')">Urutkan by PLU</button>
+            <button class="btn btn-yellow" style="width:100%;" onclick="setSortOrder('abjad')">Urutkan by Abjad (Nama)</button>
+        </div>
+    </div>
+
+<style>
+    :root { --blue: #005baa; --red: #ed1c24; --yellow: #fff200; --light: #f4f6f9; --dark: #333; --green: #28a745; }
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { margin: 0; background-color: #e9ecef; color: var(--dark); padding-bottom: 50px; font-size: 13px; }
+    
+    .header { background: var(--blue); color: white; padding: 10px 15px; text-align: center; }
+    .header h1 { margin: 0 0 5px 0; font-size: 20px; }
+    .cloud-status { font-size: 11px; margin-bottom: 10px; color: #ffeb3b; }
+    
+    .tabs { display: flex; justify-content: center; gap: 5px; position: relative; }
+    .tab-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 5px; font-weight: bold; font-size: 12px;}
+    .tab-btn.active, .tab-btn:hover { background: var(--yellow); color: var(--blue); }
+
+    .menu-dropdown-wrapper { position: relative; display: inline-block; }
+    .menu-dropdown { display: none; position: absolute; right: 0; top: 105%; background: white; min-width: 165px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; overflow: hidden; border: 1px solid #ddd; }
+    .menu-dropdown.show { display: block; }
+    .menu-dropdown button { display: block; width: 100%; text-align: left; padding: 10px 12px; border: none; background: white; color: var(--dark); font-size: 12px; font-weight: bold; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+    .menu-dropdown button:last-child { border-bottom: none; }
+    .menu-dropdown button:hover { background: var(--light); color: var(--blue); }
+    
+    .container { max-width: 1000px; margin: 10px auto; padding: 0 10px; }
+    .tab-content { display: none; animation: fadeIn 0.3s; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+    .card { background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .card.p-small { padding: 10px; }
+    .card.bg-blue { background: var(--blue); color: white; }
+    .card h3 { border-bottom: 2px solid var(--light); padding-bottom: 8px; margin-top:0; }
+    .card.bg-blue h3 { border-bottom: none; padding-bottom: 0; }
+    
+    input, textarea, select { width: 100%; padding: 8px; margin: 4px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 12px; }
+    
+    .btn { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 5px; font-size: 12px;}
+    .btn-blue { background: var(--blue); color: white; }
+    .btn-yellow { background: var(--yellow); color: var(--blue); }
+    .btn-red { background: var(--red); color: white; }
+    .btn-green { background: var(--green); color: white; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; }
+    th, td { border: 1px solid #ddd; padding: 6px 4px; text-align: left; vertical-align: middle; }
+    th { background: var(--blue); color: white; white-space: nowrap; }
+    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    
+    .plu-link { color: var(--blue); font-weight: bold; text-decoration: underline; cursor: pointer; }
+    
+    .split-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .border-red { border-top: 4px solid var(--red); }
+    .border-green { border-top: 4px solid var(--green); }
+    .text-red { color: var(--red); }
+    .text-green { color: var(--green); }
+    .small-table th, .small-table td { padding: 4px; font-size: 11px; }
+    
+    .row-minus { background-color: #ffeaea; }
+    .row-plus { background-color: #eaffeb; }
+    .row-match { background-color: #fff; }
+
+    .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: flex-start; justify-content: center; padding-top: 8%; overflow-y: auto; }
+    .modal-content { background-color: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 350px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); position: relative; margin-bottom: 20px; }
+    .modal-content.modal-compact { padding: 12px 14px; max-width: 270px; }
+    .modal-content.modal-medium { padding: 16px; max-width: 320px; }
+    .close-modal { position: absolute; right: 12px; top: 8px; font-size: 20px; font-weight: bold; cursor: pointer; color: #888; line-height: 1; }
+    .modal-field { margin-bottom: 7px; }
+    .modal-field label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 2px; }
+    .modal-input { width: 100%; padding: 6px; font-size: 14px; font-weight: bold; border: 2px solid var(--blue); border-radius: 5px; text-align: center; }
+    .modal-summary { background: #f4f6f9; padding: 6px; border-radius: 5px; font-size: 11px; text-align: center; margin-top: 6px; font-weight: bold; border: 1px solid #ddd; }
+    .history-item { border: 1px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 8px; background: #f9fafb; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+</style>
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD1aMjPJDQPmZMTP5LDouI_j47kKEJmSWk",
+        authDomain: "barcode-qscv.firebaseapp.com",
+        databaseURL: "https://barcode-qscv-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "barcode-qscv",
+        storageBucket: "barcode-qscv.firebasestorage.app",
+        messagingSenderId: "204134538515",
+        appId: "1:204134538515:web:394a3880ced41726950ee6"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    let dbBarang = {};
+    let soData = {};
+    let soHistory = {};
+    let soModisLabel = "";
+    let sortMode = localStorage.getItem('idm_so_sort') || 'default';
+    let html5QrCode = null;
+    let currentModalPlu = null;
+    let currentSistemPlu = null;
+    let pendingScannedPlu = null;
+
+    database.ref('idm_db').on('value', (snapshot) => {
+        dbBarang = snapshot.val() || {};
+        renderModisSelect();
+        renderSO();
+        renderSistemTable();
+        document.getElementById('cloudStatus').innerHTML = '<i class="fas fa-cloud text-green" style="color:#00e676;"></i> Terhubung Cloud';
+    });
+
+    database.ref('idm_so').on('value', (snapshot) => {
+        const val = snapshot.val();
+        soData = (val && typeof val === 'object') ? val : {};
+        renderSO();
+        renderSistemTable();
+    });
+
+    database.ref('idm_so_meta/modis').on('value', (snapshot) => {
+        soModisLabel = snapshot.val() || "";
+    });
+
+    database.ref('idm_so_history').on('value', (snapshot) => {
+        soHistory = snapshot.val() || {};
+        if(document.getElementById('historyModal').style.display === 'flex') {
+            renderHistoryList();
+        }
+    });
+
+    function openTab(tabId, btnEl) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        if(btnEl) btnEl.classList.add('active');
+    }
+
+    function toggleMainMenu(e) {
+        e.stopPropagation();
+        document.getElementById('mainMenuDropdown').classList.toggle('show');
+    }
+
+    document.addEventListener('click', function(e) {
+        const dd = document.getElementById('mainMenuDropdown');
+        if(dd && !e.target.closest('.menu-dropdown-wrapper')) {
+            dd.classList.remove('show');
+        }
+    });
+
+    function renderModisSelect() {
+        let modisSet = new Set();
+        for(let key in dbBarang) if(dbBarang[key] && dbBarang[key].modis) modisSet.add(dbBarang[key].modis);
+        let arrModis = Array.from(modisSet).sort();
+        let soSelectHtml = '<option value="">- Pilih Modis -</option>';
+        arrModis.forEach(m => { soSelectHtml += `<option value="${m}">${m}</option>`; });
+        document.getElementById('selectModisSO').innerHTML = soSelectHtml;
+    }
+
+    function getSortedSoKeys() {
+        let keys = Object.keys(soData).filter(plu => soData[plu] && dbBarang[plu]);
+        if(sortMode === 'plu') {
+            keys.sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
+        } else if(sortMode === 'abjad') {
+            keys.sort((a, b) => (dbBarang[a].nama || '').localeCompare(dbBarang[b].nama || '', 'id', { sensitivity: 'base' }));
+        }
+        return keys;
+    }
+
+    // --- URUTAN BARANG ---
+    function openSortModal() {
+        document.getElementById('mainMenuDropdown').classList.remove('show');
+        document.getElementById('sortModal').style.display = 'flex';
+    }
+    function closeSortModal() { document.getElementById('sortModal').style.display = 'none'; }
+    function setSortOrder(mode) {
+        sortMode = mode;
+        localStorage.setItem('idm_so_sort', mode);
+        renderSO();
+        renderSistemTable();
+        closeSortModal();
+    }
+
+    // --- RESET SO & HISTORY ---
+    function resetSO() {
+        if(Object.keys(soData).length === 0) {
+            alert("Tabel SO sudah kosong.");
+            return;
+        }
+        document.getElementById('resetChoiceModal').style.display = 'flex';
+    }
+    function closeResetChoiceModal() { document.getElementById('resetChoiceModal').style.display = 'none'; }
+
+    function formatTanggalSO() {
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+    }
+
+    function proceedResetWithChoice(shouldSave) {
+        closeResetChoiceModal();
+        let pass = prompt("Masukkan sandi (oke) untuk reset tabel SO:");
+        if(pass === "oke") {
+            if(shouldSave) {
+                const tgl = formatTanggalSO();
+                const title = soModisLabel ? `${soModisLabel} - ${tgl}` : tgl;
+                const histId = 'hist_' + Date.now();
+                const snapshotItems = {};
+                for(let plu in soData) {
+                    if(soData[plu] && dbBarang[plu]) {
+                        snapshotItems[plu] = {
+                            sistem: soData[plu].sistem ?? "",
+                            display: soData[plu].display ?? "",
+                            gudang: soData[plu].gudang ?? "",
+                            nama: dbBarang[plu].nama || "",
+                            barcode: dbBarang[plu].barcode || "-",
+                            modis: dbBarang[plu].modis || ""
+                        };
+                    }
+                }
+                database.ref('idm_so_history/' + histId).set({
+                    id: histId,
+                    title: title,
+                    modis: soModisLabel || "",
+                    tanggal: tgl,
+                    createdAt: Date.now(),
+                    items: snapshotItems
+                });
+            }
+            soData = {};
+            soModisLabel = "";
+            database.ref('idm_so').set(null);
+            database.ref('idm_so_meta/modis').set("");
+            alert(shouldSave ? "History SO disimpan dan tabel SO berhasil dikosongkan." : "Tabel SO berhasil dikosongkan.");
+        } else if (pass !== null) {
+            alert("Sandi salah!");
+        }
+    }
+
+    function openHistoryModal() {
+        document.getElementById('mainMenuDropdown').classList.remove('show');
+        renderHistoryList();
+        document.getElementById('historyModal').style.display = 'flex';
+    }
+    function closeHistoryModal() { document.getElementById('historyModal').style.display = 'none'; }
+
+    function renderHistoryList() {
+        const container = document.getElementById('historyListContainer');
+        const list = Object.values(soHistory || {}).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        if(list.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#777; font-size:12px;">Belum ada History SO tersimpan.</p>';
+            return;
+        }
+        let html = '';
+        list.forEach(h => {
+            const count = h.items ? Object.keys(h.items).length : 0;
+            html += `<div class="history-item">
+                <div>
+                    <div style="font-weight:bold; color:var(--blue); font-size:13px;">${h.title}</div>
+                    <div style="font-size:11px; color:#666;">${count} item barang</div>
+                </div>
+                <div style="display:flex; gap:5px;">
+                    <button class="btn btn-blue" style="margin:0; padding:5px 8px; font-size:11px;" onclick="restoreHistory('${h.id}')">Pulihkan</button>
+                    <button class="btn btn-red" style="margin:0; padding:5px 8px; font-size:11px;" onclick="deleteHistory('${h.id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function restoreHistory(histId) {
+        const h = soHistory[histId];
+        if(!h || !h.items) return;
+        if(Object.keys(soData).length > 0) {
+            if(!confirm("Data SO aktif saat ini akan diganti dengan History SO ini. Lanjutkan?")) return;
+        }
+        const restoredSo = {};
+        const dbUpdates = {};
+        for(let plu in h.items) {
+            const it = h.items[plu];
+            restoredSo[plu] = { sistem: it.sistem ?? "", display: it.display ?? "", gudang: it.gudang ?? "" };
+            if(!dbBarang[plu]) {
+                dbUpdates[plu] = { plu: plu, nama: it.nama || `ITEM (${plu})`, barcode: it.barcode || "-", modis: it.modis || "BELUM TERDAFTAR" };
+            }
+        }
+        if(Object.keys(dbUpdates).length > 0) database.ref('idm_db').update(dbUpdates);
+        database.ref('idm_so').set(restoredSo);
+        database.ref('idm_so_meta/modis').set(h.modis || "");
+        closeHistoryModal();
+        alert(`History "${h.title}" berhasil dipulihkan.`);
+    }
+
+    function deleteHistory(histId) {
+        const h = soHistory[histId];
+        if(!h) return;
+        if(confirm(`Apakah Anda yakin ingin menghapus History SO "${h.title}"?`)) {
+            database.ref('idm_so_history/' + histId).remove();
+        }
+    }
+
+    function openOptionInfo() {
+        alert("Petunjuk:\n- Klik pada kolom PLU di tabel SO untuk membuka pop-up stok Display & Gudang.\n- Gunakan tombol INPUT STOK SISTEM untuk mengisi stok sistem dengan cepat.");
+    }
+
+    // --- MODAL DISPLAY & GUDANG ---
+    function openModal(plu) {
+        currentModalPlu = plu;
+        let item = dbBarang[plu];
+        let data = soData[plu] || { sistem: "", display: "", gudang: "" };
+        document.getElementById('modalTitle').innerText = `${item.plu} - ${item.nama}`;
+        document.getElementById('modalSubTitle').innerText = `Barcode: ${item.barcode} | Modis: ${item.modis}`;
+        document.getElementById('modalSistem').value = (data.sistem === 0 || data.sistem === "" || data.sistem === undefined) ? "" : data.sistem;
+        document.getElementById('modalDisplay').value = (data.display === 0 || data.display === "" || data.display === undefined) ? "" : data.display;
+        document.getElementById('modalGudang').value = (data.gudang === 0 || data.gudang === "" || data.gudang === undefined) ? "" : data.gudang;
+        updateModalSummary();
+        document.getElementById('itemModal').style.display = 'flex';
+        setTimeout(() => { let d = document.getElementById('modalDisplay'); d.focus(); d.select(); }, 100);
+    }
+    function closeModal() { document.getElementById('itemModal').style.display = 'none'; currentModalPlu = null; }
+
+    document.getElementById('modalDisplay').addEventListener('input', updateModalSummary);
+    document.getElementById('modalGudang').addEventListener('input', updateModalSummary);
+
+    function updateModalSummary() {
+        let disp = parseInt(document.getElementById('modalDisplay').value) || 0;
+        let gud = parseInt(document.getElementById('modalGudang').value) || 0;
+        let sis = parseInt(document.getElementById('modalSistem').value) || 0;
+        let selisih = (disp + gud) - sis;
+        document.getElementById('modalSummary').innerText = `Total Fisik: ${disp + gud} | Selisih: ${selisih > 0 ? '+' + selisih : selisih}`;
+    }
+
+    function saveModalData() {
+        if(!currentModalPlu) return;
+        let disp = document.getElementById('modalDisplay').value;
+        let gud = document.getElementById('modalGudang').value;
+        let sis = document.getElementById('modalSistem').value;
+        database.ref('idm_so/' + currentModalPlu).update({
+            sistem: (sis === "") ? "" : parseInt(sis),
+            display: (disp === "") ? "" : parseInt(disp),
+            gudang: (gud === "") ? "" : parseInt(gud)
+        });
+        closeModal();
+    }
+
+    // --- HALAMAN & MODAL INPUT STOK SISTEM ---
+    function openSistemView() {
+        renderSistemTable();
+        openTab('tab-sistem', null);
+    }
+
+    function backFromSistemView() {
+        saveCurrentSistemInput();
+        openTab('tab-so', document.querySelector('.tab-btn'));
+    }
+
+    function renderSistemTable() {
+        const tbody = document.getElementById('bodySistem');
+        if(!tbody) return;
+        const keys = getSortedSoKeys();
+        let html = '';
+        keys.forEach((plu, idx) => {
+            const item = dbBarang[plu];
+            const sisVal = (soData[plu].sistem === "" || soData[plu].sistem === undefined || soData[plu].sistem === null) ? "-" : soData[plu].sistem;
+            html += `<tr onclick="openSistemModal('${plu}')" style="cursor:pointer;">
+                <td>${idx + 1}</td>
+                <td><span class="plu-link">${item.plu}</span></td>
+                <td>${item.nama}</td>
+                <td style="text-align:center; font-weight:bold; color:var(--blue);">${sisVal}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+        searchSistemTable();
+    }
+
+    function searchSistemTable() {
+        const el = document.getElementById('searchSistemInput');
+        if(!el) return;
+        const filter = el.value.toLowerCase();
+        document.querySelectorAll('#bodySistem tr').forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(filter) ? '' : 'none';
+        });
+    }
+
+    function openSistemModal(plu) {
+        currentSistemPlu = plu;
+        const item = dbBarang[plu];
+        if(!item) return;
+        document.getElementById('sistemModalNama').innerText = item.nama;
+        document.getElementById('sistemModalPluText').innerText = item.plu;
+        JsBarcode("#sistemBarcodeSvg", String(item.plu), {
+            format: "CODE128",
+            width: 2,
+            height: 50,
+            displayValue: false,
+            margin: 4
+        });
+        const curSis = soData[plu] ? soData[plu].sistem : "";
+        const inp = document.getElementById('sistemModalInput');
+        inp.value = (curSis === "" || curSis === undefined || curSis === null) ? "" : curSis;
+        document.getElementById('sistemModal').style.display = 'flex';
+        setTimeout(() => { inp.focus(); inp.select(); }, 80);
+    }
+
+    function saveCurrentSistemInput() {
+        if(!currentSistemPlu) return;
+        const inp = document.getElementById('sistemModalInput');
+        if(!inp) return;
+        const val = inp.value;
+        const parsed = val === "" ? "" : parseInt(val);
+        if(!soData[currentSistemPlu]) soData[currentSistemPlu] = { display: "", gudang: "" };
+        soData[currentSistemPlu].sistem = parsed;
+        database.ref('idm_so/' + currentSistemPlu + '/sistem').set(parsed);
+    }
+
+    function autoSaveSistemModal() {
+        saveCurrentSistemInput();
+    }
+
+    function closeSistemModal() {
+        saveCurrentSistemInput();
+        document.getElementById('sistemModal').style.display = 'none';
+        currentSistemPlu = null;
+        renderSistemTable();
+    }
+
+    function nextSistemModalItem() {
+        saveCurrentSistemInput();
+        const keys = getSortedSoKeys();
+        const idx = keys.indexOf(currentSistemPlu);
+        if(idx > -1 && idx < keys.length - 1) {
+            openSistemModal(keys[idx + 1]);
+        } else {
+            closeSistemModal();
+            alert("Sudah sampai item terakhir!");
+        }
+    }
+
+    // --- DOWNLOAD EXCEL ---
+    function downloadExcel() {
+        let dataToExport = [];
+        let no = 1;
+        getSortedSoKeys().forEach(plu => {
+            let item = dbBarang[plu];
+            let sistem = parseInt(soData[plu].sistem) || 0;
+            let display = parseInt(soData[plu].display) || 0;
+            let gudang = parseInt(soData[plu].gudang) || 0;
+            let totalFisik = display + gudang;
+            let selisih = totalFisik - sistem;
+            let formatSelisih = selisih > 0 ? "+" + selisih : (selisih === 0 ? "0" : selisih.toString());
+            let ket = selisih < 0 ? "Minus" : (selisih > 0 ? "Plus" : "Klop");
+            dataToExport.push({ "No": no++, "PLU": item.plu, "Nama Barang": item.nama, "Barcode": item.barcode, "Sistem": sistem, "Display": display, "Gudang": gudang, "Total Fisik": totalFisik, "Selisih": formatSelisih, "Keterangan": ket });
+        });
+        if(dataToExport.length === 0) { alert("Belum ada data SO!"); return; }
+        let ws = XLSX.utils.json_to_sheet(dataToExport);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Data_SO");
+        ws['!cols'] = [ {wch: 5}, {wch: 10}, {wch: 35}, {wch: 16}, {wch: 8}, {wch: 8}, {wch: 8}, {wch: 10}, {wch: 8}, {wch: 10} ];
+        XLSX.writeFile(wb, "Hasil_SO_IDM.xlsx");
+    }
+
+    // --- SO, INPUT BANYAK PLU & SCANNER ---
+    function addModisToSO() {
+        let modis = document.getElementById('selectModisSO').value;
+        if(!modis) { alert('Pilih modis!'); return; }
+        const hadExisting = Object.keys(soData).length > 0;
+        const updates = {};
+        for(let key in dbBarang) {
+            if(dbBarang[key] && dbBarang[key].modis === modis && !soData[key]) {
+                updates[key] = { sistem: "", display: "", gudang: "" };
+            }
+        }
+        if(Object.keys(updates).length > 0) {
+            database.ref('idm_so').update(updates);
+        }
+        const nextLabel = (!hadExisting) ? modis : (soModisLabel === modis ? modis : "");
+        soModisLabel = nextLabel;
+        database.ref('idm_so_meta/modis').set(nextLabel);
+    }
+
+    function addMultiplePlu() {
+        let val = document.getElementById('multiPluInput').value.trim();
+        if(!val) return;
+        let listPlu = val.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+        let missingPlu = [];
+        const dbUpdates = {};
+        const soUpdates = {};
+
+        listPlu.forEach(plu => {
+            if(!dbBarang[plu]) {
+                const newItem = { plu: plu, nama: `ITEM BARU (${plu})`, barcode: "-", modis: "BELUM TERDAFTAR" };
+                dbBarang[plu] = newItem;
+                dbUpdates[plu] = newItem;
+                missingPlu.push(plu);
+            }
+            if(!soData[plu]) {
+                soData[plu] = { sistem: "", display: "", gudang: "" };
+                soUpdates[plu] = { sistem: "", display: "", gudang: "" };
+            }
+        });
+
+        if(missingPlu.length > 0) {
+            alert(`Pemberitahuan:\nAda ${missingPlu.length} barang baru yang otomatis ditambahkan ke Modis "BELUM TERDAFTAR" di Database.`);
+            database.ref('idm_db').update(dbUpdates);
+        }
+        if(Object.keys(soUpdates).length > 0) {
+            database.ref('idm_so').update(soUpdates);
+        }
+        if(soModisLabel) {
+            soModisLabel = "";
+            database.ref('idm_so_meta/modis').set("");
+        }
+        document.getElementById('multiPluInput').value = '';
+    }
+
+    function startCameraScanner() {
+        document.getElementById('reader').style.display = 'block';
+        document.getElementById('closeCameraBtn').style.display = 'block';
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } },
+            (decoded) => handleScannedCode(decoded), (err) => {}
+        ).catch(e => alert("Error Kamera: " + e));
+    }
+    
+    function stopCameraScanner() {
+        if(html5QrCode) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('reader').style.display = 'none';
+                document.getElementById('closeCameraBtn').style.display = 'none';
+            }).catch(() => {});
+        }
+    }
+
+    function handleScannedCode(code) {
+        let foundPlu = dbBarang[code] ? code : null;
+        if(!foundPlu) {
+            for(let key in dbBarang) {
+                if(dbBarang[key] && String(dbBarang[key].barcode) === String(code)) { foundPlu = key; break; }
+            }
+        }
+        
+        if(!foundPlu) {
+            stopCameraScanner();
+            alert('Barcode tidak dikenali! Daftarkan dulu di Database.');
+            return;
+        }
+
+        stopCameraScanner();
+        if(soData[foundPlu]) {
+            openModal(foundPlu);
+        } else {
+            pendingScannedPlu = foundPlu;
+            const item = dbBarang[foundPlu];
+            document.getElementById('scanNotFoundInfo').innerText = `${item.plu} - ${item.nama}`;
+            document.getElementById('scanNotFoundModal').style.display = 'flex';
+        }
+    }
+
+    function confirmAddScannedItem() {
+        if(!pendingScannedPlu) return;
+        const plu = pendingScannedPlu;
+        pendingScannedPlu = null;
+        document.getElementById('scanNotFoundModal').style.display = 'none';
+        soData[plu] = { sistem: "", display: "", gudang: "" };
+        database.ref('idm_so/' + plu).set({ sistem: "", display: "", gudang: "" });
+        if(soModisLabel) {
+            soModisLabel = "";
+            database.ref('idm_so_meta/modis').set("");
+        }
+        openModal(plu);
+    }
+
+    function skipScannedItem() {
+        pendingScannedPlu = null;
+        document.getElementById('scanNotFoundModal').style.display = 'none';
+    }
+
+    function searchSO() {
+        let filter = document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('#bodySO tr').forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(filter) ? '' : 'none';
+        });
+    }
+
+    function renderSO() {
+        let html = '', htmlMinus = '', htmlPlus = '';
+        let noSO = 1, noMin = 1, noPlus = 1;
+        
+        getSortedSoKeys().forEach(plu => {
+            let item = dbBarang[plu];
+            let data = soData[plu];
+            
+            let display = parseInt(data.display) || 0;
+            let gudang = parseInt(data.gudang) || 0;
+            let totalFisik = display + gudang;
+            let sistem = parseInt(data.sistem) || 0;
+            let selisih = totalFisik - sistem;
+            
+            let displaySistemText = (data.sistem === "" || data.sistem === undefined || data.sistem === null) ? 0 : data.sistem;
+            let displayDispText = (data.display === "" || data.display === 0 || data.display === undefined) ? 0 : data.display;
+            let displayGudText = (data.gudang === "" || data.gudang === 0 || data.gudang === undefined) ? 0 : data.gudang;
+            
+            let rowClass = selisih < 0 ? 'row-minus' : (selisih > 0 ? 'row-plus' : 'row-match');
+            let formatSelisih = selisih > 0 ? '+' + selisih : (selisih === 0 ? '0' : selisih);
+            
+            html += `<tr id="row_${plu}" class="${rowClass}">
+                <td>${noSO++}</td>
+                <td><span class="plu-link" onclick="openModal('${plu}')">${item.plu}</span></td>
+                <td>${item.nama}</td>
+                <td style="text-align:center; font-weight:bold;">${displaySistemText}</td>
+                <td>${displayDispText}</td>
+                <td>${displayGudText}</td>
+                <td style="font-weight:bold;">${totalFisik}</td>
+                <td style="font-weight:bold;">${formatSelisih}</td>
+            </tr>`;
+            
+            if(selisih < 0) {
+                htmlMinus += `<tr><td>${noMin++}</td><td>${item.plu}</td><td>${item.nama}</td><td class="text-red"><b>${formatSelisih}</b></td></tr>`;
+            } else if(selisih > 0) {
+                htmlPlus += `<tr><td>${noPlus++}</td><td>${item.plu}</td><td>${item.nama}</td><td class="text-green"><b>+${formatSelisih}</b></td></tr>`;
+            }
+        });
+        
+        if(document.getElementById('bodySO')) document.getElementById('bodySO').innerHTML = html;
+        if(document.getElementById('bodyMinus')) document.getElementById('bodyMinus').innerHTML = htmlMinus;
+        if(document.getElementById('bodyPlus')) document.getElementById('bodyPlus').innerHTML = htmlPlus;
+    }
+</script>
+</body>
+</html>
